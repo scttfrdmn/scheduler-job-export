@@ -1,0 +1,58 @@
+# Data files - Never commit actual cluster data
+*.csv
+*.tsv
+*.dat
+
+# Analysis outputs
+*.png
+*.jpg
+*.jpeg
+*.pdf
+*.html
+
+# Analysis results and reports
+*_analysis.md
+*_ANALYSIS.md
+*OSCAR*.md
+*oscar*.md
+*_report.md
+*_results.md
+
+# Mapping files (contain sensitive user mappings)
+*mapping*.txt
+*_mapping_*.txt
+
+# Temporary files
+*.tmp
+*.temp
+.DS_Store
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+*.egg-info/
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Log files
+*.log
+
+# Compressed archives
+*.zip
+*.tar.gz
+*.tgz
+*.bz2
+
+# Site-specific configurations
+site_config.yaml
+site_config.json
