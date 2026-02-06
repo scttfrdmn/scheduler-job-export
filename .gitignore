@@ -18,6 +18,17 @@
 *_report.md
 *_results.md
 
+# Cloud comparisons and non-AWS providers
+*cloud_comparison*.md
+*CLOUD_COMPARISON*.md
+*azure*.md
+*Azure*.md
+*gcp*.md
+*GCP*.md
+*google*.md
+*Google*.md
+*multi*cloud*.md
+
 # Mapping files (contain sensitive user mappings)
 *mapping*.txt
 *_mapping_*.txt

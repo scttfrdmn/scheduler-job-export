@@ -213,7 +213,7 @@ True utilization: 89.8%
 **Analysis:**
 1. Identify peak usage periods
 2. Calculate overflow beyond on-prem capacity
-3. Price AWS/Azure spot instances for overflow
+3. Price AWS spot instances for overflow
 4. Compare cost vs. expanding on-prem
 
 **Example Finding:**
