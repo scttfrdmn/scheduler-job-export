@@ -80,8 +80,9 @@ All exporters produce **identical CSV format** for seamless analysis.
   mapping.txt
 
 # 4. Analyze
-python3 analyze_concurrent_load.py
-python3 analyze_submission_abandonment_events.py
+python3 analyze_true_utilization.py slurm_anonymized.csv slurm_cluster_config.csv
+python3 visualize_utilization.py utilization_timeseries.csv
+python3 analyze_cross_user_impacts.py slurm_anonymized.csv slurm_cluster_config.csv
 ```
 
 ### For Other Schedulers
@@ -147,10 +148,17 @@ cluster-job-analysis/
 │   └── analyze_cluster_config.py       # Cluster capacity analysis
 │
 ├── Analysis Scripts/
-│   ├── analyze_concurrent_load.py      # Utilization over time
-│   ├── analyze_submission_abandonment_events.py  # Test hypothesis
+│   ├── analyze_true_utilization.py     # Comprehensive utilization analysis
+│   ├── visualize_utilization.py        # Publication-quality charts
+│   ├── analyze_job_resource_efficiency.py  # Job-level resource usage
+│   ├── analyze_queue_wait_times.py     # Wait time statistics & patterns
+│   ├── analyze_workload_characteristics.py # Arrivals, heavy-tail, correlations
+│   ├── analyze_short_jobs_and_arrays.py    # Workflow steps & scheduler overhead
+│   ├── analyze_cross_user_impacts.py   # Submission abandonment triggers
+│   ├── analyze_concurrent_load.py      # Utilization over time (legacy)
+│   ├── analyze_submission_abandonment_events.py  # Test hypothesis (legacy)
 │   ├── analyze_jobs.py                 # Basic statistics
-│   ├── analyze_utilization.py          # Utilization metrics
+│   ├── analyze_utilization.py          # Utilization metrics (legacy)
 │   ├── analyze_packing.py              # Node packing efficiency
 │   ├── analyze_slurm_cloud_bursting.py # Cloud ROI
 │   └── analyze_full_aws_migration.py   # Full migration analysis
@@ -172,6 +180,142 @@ cluster-job-analysis/
     ├── generate_mock_user_group_data.py # Test data generation
     └── generate_sample_data_with_users.sh # Sample data
 ```
+
+---
+
+## 📊 Analysis Capabilities
+
+### Core Analysis Tools
+
+#### 1. True Utilization Analysis
+**Script:** `analyze_true_utilization.py`
+
+Calculates cluster utilization at every job transition point (start/end):
+- Node-level metrics (busy/idle status)
+- CPU-level metrics (allocated vs capacity)
+- Memory-level metrics (allocated vs capacity)
+- Statistics: mean, median, percentiles (25th, 75th, 90th, 95th, 99th)
+- Time-weighted averages (accounts for duration)
+- Time series output for visualization
+
+**Usage:**
+```bash
+python3 analyze_true_utilization.py jobs_anon.csv cluster_config.csv
+# Outputs: utilization_timeseries.csv, utilization_statistics.csv
+```
+
+**Documentation:** See [UTILIZATION_ANALYSIS_GUIDE.md](UTILIZATION_ANALYSIS_GUIDE.md)
+
+#### 2. Utilization Visualization
+**Script:** `visualize_utilization.py`
+
+Creates publication-quality charts (300 DPI):
+- CPU utilization timeline with mean/median lines
+- Memory utilization timeline
+- Combined CPU+Memory dual-panel chart
+- Distribution histograms
+- Daily average aggregations
+
+**Usage:**
+```bash
+python3 visualize_utilization.py utilization_timeseries.csv
+# Outputs: 5 PNG charts
+```
+
+#### 3. Job Resource Efficiency
+**Script:** `analyze_job_resource_efficiency.py`
+
+Analyzes requested vs. actually used resources:
+- CPU efficiency: (used / requested) × 100%
+- Memory efficiency: (used / requested) × 100%
+- GPU efficiency (if available)
+- Per-job, per-user, per-group statistics
+- Weekly trends and temporal patterns
+
+**Outputs:** 4 CSV files with efficiency metrics
+
+#### 4. Queue Wait Time Analysis
+**Script:** `analyze_queue_wait_times.py`
+
+Comprehensive wait time statistics with temporal patterns:
+- Time of day (24 hours)
+- Day of week (7 days)
+- Week of month (1-5)
+- Month of year (12 months)
+- Per-user and per-group statistics
+- Job size correlation analysis
+- Calendar time series
+
+**Outputs:** 8 CSV files with wait time patterns
+
+#### 5. Workload Characterization
+**Script:** `analyze_workload_characteristics.py`
+
+Statistical workload analysis:
+- **Arrival patterns**: Poisson testing, inter-arrival times
+- **Burstiness**: Index calculation (σ² - μ) / (σ² + μ)
+- **Group correlation**: Cross-correlation matrix
+- **Heavy-tailed distribution**: Power law exponent (Pareto α)
+- **Autocorrelation**: Multiple time lags (1h, 2h, 6h, 12h, 24h, 48h, 1week)
+- Jobs > 95th percentile runtime
+- % of CPU-hours consumed by heavy-tail jobs
+
+**Outputs:** 5 CSV files with statistical analysis
+
+#### 6. Short Jobs & Array Analysis
+**Script:** `analyze_short_jobs_and_arrays.py`
+
+Identifies workflow patterns and scheduler overhead:
+- Short runtime jobs (30s, 1min, 5min, 15min, 1hr thresholds)
+- Job array detection (rapid successive submissions)
+- Workflow sequence detection (chained dependent jobs)
+- Per-user and per-group patterns
+- Temporal distributions
+- **Scheduler overhead impact estimates**
+- System efficiency implications
+
+**Outputs:** 7 CSV files with job patterns and overhead analysis
+
+#### 7. Cross-User Impact Analysis
+**Script:** `analyze_cross_user_impacts.py`
+
+**🔥 NEW - Enhanced Submission Abandonment Study**
+
+Analyzes how individual user behaviors impact others and trigger submission abandonment:
+
+**Key Features:**
+- Identifies high-impact jobs (large resources, long runtimes)
+- Measures before/after effects on other users:
+  - Submission rate changes
+  - Wait time increases
+  - Active user count changes
+- Detects **submission abandonment triggers**
+- Identifies recurring patterns (e.g., "User X every Tuesday")
+- Temporal analysis of when impacts occur
+- Cross-group impact relationships
+
+**Example Insights Enabled:**
+- "User X's Tuesday batch jobs cause 2x wait time increase for others"
+- "When User Y submits >1000 core jobs, submission rate drops 40% within 1 hour"
+- "Group A's monthly jobs trigger submission abandonment in Group B"
+
+**Usage:**
+```bash
+python3 analyze_cross_user_impacts.py jobs_anon.csv cluster_config.csv
+```
+
+**Outputs:** 6 CSV files including:
+- `high_impact_jobs.csv` - Jobs with significant system impact
+- `impact_events.csv` - Specific incidents with before/after metrics
+- `user_impact_patterns.csv` - Recurring patterns per user
+- `submission_abandonment_triggers.csv` - Events that trigger abandonment
+- `temporal_impact_patterns.csv` - Day/time patterns of impacts
+- `cross_group_impacts.csv` - How groups affect each other
+
+**Provides both:**
+- ✅ General patterns over time
+- ✅ Specific data points (individual incidents)
+- ✅ Causal relationships (User X → System Y → Others Z)
 
 ---
 
