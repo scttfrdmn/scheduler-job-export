@@ -1,6 +1,6 @@
-# HPC Cluster Data Export Tools
+# Cluster Job Analysis
 
-Production-ready scripts for collecting **job history** and **cluster configuration** from HPC schedulers.
+Scripts for collecting **job history** and **cluster configuration** from HPC schedulers.
 
 **Supported Schedulers:** SLURM, IBM Spectrum LSF, PBS/Torque, UGE/SGE, HTCondor
 
@@ -671,7 +671,3 @@ Improvements welcome! Common enhancements:
 - Additional output formats (JSON, Parquet, etc.)
 
 ---
-
-## Version
-
-Data Export Tools v2.0 - Simplified for data collection only.
