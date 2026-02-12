@@ -338,6 +338,8 @@ apt-get install shellcheck
 **Automated CI/CD:**
 All security checks run automatically on every push and pull request via GitHub Actions. See `.github/workflows/security.yml`.
 
+> **Note:** Snyk vulnerability scanning requires a `SNYK_TOKEN` secret. See [SECURITY_SETUP.md](SECURITY_SETUP.md) for setup instructions.
+
 See [TESTING.md](TESTING.md) for complete testing documentation.
 
 ---
