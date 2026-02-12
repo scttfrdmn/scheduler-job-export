@@ -93,6 +93,7 @@ All scripts produce standardized CSV format with these core columns:
 **Scheduler-specific columns:**
 - **LSF/PBS/UGE:** Include `queue` column
 - **LSF/SLURM:** Include `status` column (job state)
+- **UGE/SGE:** Include `pe_name` (parallel environment) and `slots` columns for PE job analysis
 
 **Cluster Config CSV:**
 
@@ -490,11 +491,20 @@ sudo cp -r /var/spool/pbs/server_priv/accounting/ ~/pbs_logs/
 **Advantages:**
 - `qacct` provides structured output
 - Usually no special permissions needed
+- Captures parallel environment (PE) jobs
 
 **Limitations:**
 - Date format specific (MM/DD/YYYY)
 - May have gaps in data
 - Different vendors have slight variations
+- **Multi-node PE jobs:** `qacct` only shows one hostname, node count estimated for large jobs
+
+**Parallel Environment (PE) Job Handling:**
+UGE uses PEs (like `mpi`, `smp`, `openmpi`) for multi-core and multi-node jobs. The export script:
+- Captures PE name in `pe_name` column
+- Captures total slots in `slots` column
+- Estimates node count for PE jobs with ≥48 slots (assumes ~24 cores/node)
+- For smaller PE jobs, node count may be inaccurate (defaults to 1)
 
 **Tips:**
 ```bash
@@ -503,6 +513,9 @@ qacct -j 12345  # Query a known job
 
 # Check available date range
 qacct -b 01/01/2020 -e 01/02/2020
+
+# View PE job details
+qacct -j <job_id> | grep -E "(granted_pe|slots|hostname)"
 
 # Different UGE versions may need script adjustments
 ```
