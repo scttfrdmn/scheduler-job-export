@@ -1,645 +1,495 @@
-# HPC Multi-Scheduler Data Export & Analysis Toolkit
+# HPC Cluster Data Export Tools
 
-**Production-ready tools for exporting, anonymizing, and analyzing job data from all major HPC schedulers.**
+Simple data collection scripts for exporting job history and cluster configuration from HPC schedulers.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Schedulers: 5](https://img.shields.io/badge/Schedulers-5-blue.svg)](#supported-schedulers)
-[![Documentation: 40k+ words](https://img.shields.io/badge/Docs-40k%2B%20words-green.svg)](#documentation)
+**Supported Schedulers:** SLURM, IBM Spectrum LSF, PBS/Torque, UGE/SGE, HTCondor
 
 ---
 
-## 🎯 Purpose
+## Quick Start
 
-This toolkit enables comprehensive behavioral analysis of HPC cluster usage by:
+### 1. Export Your Data
 
-1. **Exporting** job history and cluster configuration from any major HPC scheduler
-2. **Anonymizing** user data while preserving usage patterns
-3. **Analyzing** submission behavior, utilization, and cloud bursting opportunities
-
-**Primary Use Case:** Test the hypothesis that users avoid submitting jobs during periods of high cluster congestion ("submission abandonment").
-
----
-
-## ✨ Key Features
-
-### 🔄 Universal Scheduler Support
-
-Export data from **all major HPC schedulers** with standardized output:
-
-| Scheduler | Job Export | Cluster Config | Status |
-|-----------|------------|----------------|--------|
-| **SLURM** | ✅ | ✅ | Production |
-| **LSF** (IBM Spectrum) | ✅ | ✅ | Production |
-| **PBS/Torque/PBS Pro** | ✅ | ✅ | Production |
-| **UGE/SGE/OGE** | ✅ | ✅ | Production |
-| **HTCondor** | ✅ | ✅ | Production |
-
-All exporters produce **identical CSV format** for seamless analysis.
-
-### 🔒 Privacy-Preserving Anonymization
-
-- Deterministic mapping: `jsmith` → `user_0001`
-- Preserves behavioral patterns
-- Auto-detects user/group columns
-- Secure mapping file management
-
-### 📊 Comprehensive Analysis
-
-- **Submission abandonment** - Do users avoid submitting during congestion?
-- **True utilization** - Compare usage vs. actual capacity
-- **Cloud bursting ROI** - Calculate hybrid cloud savings
-- **Concurrent load** - Utilization time series
-- **Multi-site comparison** - Cross-scheduler behavioral studies
-
-### 📚 Extensive Documentation
-
-**40,000+ words** of documentation including:
-- Scheduler-specific export guides
-- Troubleshooting for every scheduler
-- Privacy and anonymization workflows
-- Institutional approval guidance
-- Complete analysis tutorials
-
----
-
-## 🚀 Quick Start
-
-### For SLURM
+Run the export script for your scheduler:
 
 ```bash
-# 1. Export cluster configuration
-./export_slurm_cluster_config.sh
-
-# 2. Export job history
+# SLURM
 ./export_with_users.sh
 
-# 3. Anonymize
-./anonymize_cluster_data.sh \
-  slurm_jobs_with_users.csv \
-  slurm_anonymized.csv \
-  mapping.txt
-
-# 4. Analyze
-python3 analyze_true_utilization.py slurm_anonymized.csv slurm_cluster_config.csv
-python3 visualize_utilization.py utilization_timeseries.csv
-python3 analyze_cross_user_impacts.py slurm_anonymized.csv slurm_cluster_config.csv
-```
-
-### For Other Schedulers
-
-**LSF:**
-```bash
+# LSF
 ./export_lsf_comprehensive.sh 2024/01/01 2024/12/31
+
+# PBS/Torque
+sudo ./export_pbs_comprehensive.sh 20240101 20241231
+
+# UGE/SGE
+./export_uge_comprehensive.sh 01/01/2024 12/31/2024
+
+# HTCondor
+./export_htcondor_data.sh
 ```
 
-**PBS:**
+### 2. Export Cluster Configuration
+
+```bash
+# SLURM
+./export_slurm_cluster_config.sh
+
+# LSF
+./export_lsf_cluster_config.sh
+
+# PBS
+./export_pbs_cluster_config.sh
+
+# UGE
+./export_uge_cluster_config.sh
+```
+
+### 3. Anonymize (Optional)
+
+```bash
+./anonymize_cluster_data.sh input.csv output.csv mapping.txt
+```
+
+---
+
+## What Gets Exported
+
+All scripts produce identical CSV format with these columns:
+
+| Column | Description |
+|--------|-------------|
+| `user` | Username (or anonymized) |
+| `group` | User's group |
+| `account` | Accounting string (if available) |
+| `job_id` | Unique job identifier |
+| `cpus` | Number of CPUs requested |
+| `mem_req` | Memory requested (MB) |
+| `nodes` | Number of nodes allocated |
+| `submit_time` | When job was submitted |
+| `start_time` | When job started running |
+| `end_time` | When job completed |
+| `exit_status` | Job exit code |
+
+**Cluster Config CSV:**
+
+| Column | Description |
+|--------|-------------|
+| `hostname` | Node hostname |
+| `cpus` | CPUs available on node |
+| `memory_mb` | Memory available (MB) |
+| `node_type` | Type of node |
+| `state` | Current state |
+| `partition` | Partition/queue name |
+
+---
+
+## Requirements
+
+### All Schedulers
+- Bash 4.0+
+- Read access to scheduler accounting data
+
+### SLURM
+- `sacct` command available
+- `sinfo` for cluster config
+
+### LSF
+- `bhist` command available
+- `bhosts` for cluster config
+- May require `-a` flag for all jobs
+
+### PBS/Torque
+- Access to accounting logs (usually `/var/spool/pbs/server_priv/accounting/`)
+- `pbsnodes` command
+- Often requires sudo
+
+### UGE/SGE
+- `qacct` command available
+- `qhost` for cluster config
+
+### HTCondor
+- `condor_history` command available
+- `condor_status` for cluster config
+
+---
+
+## Usage Examples
+
+### SLURM - Last 90 Days
+
+```bash
+./export_with_users.sh
+# Output: slurm_jobs_with_users.csv
+```
+
+### LSF - Specific Date Range
+
+```bash
+./export_lsf_comprehensive.sh 2024/06/01 2024/08/31
+# Output: lsf_jobs_comprehensive.csv
+```
+
+### PBS - Full Year with Cluster Config
+
 ```bash
 sudo ./export_pbs_comprehensive.sh 20240101 20241231
+./export_pbs_cluster_config.sh
+# Output: pbs_jobs_comprehensive.csv, pbs_cluster_config.csv
 ```
 
-**UGE/SGE:**
+### Anonymize for Sharing
+
 ```bash
-./export_uge_comprehensive.sh 01/01/2024 12/31/2024
-```
+./anonymize_cluster_data.sh \
+  slurm_jobs_with_users.csv \
+  jobs_anonymized.csv \
+  user_mapping.txt
 
-See [scheduler-specific guides](#documentation) for complete instructions.
-
----
-
-## 📋 Requirements
-
-### System Requirements
-- Bash 4.0+
-- Python 3.6+
-- Pandas (for analysis scripts)
-
-### Scheduler Access
-- Read access to scheduler accounting data
-- Admin privileges may be required (PBS, LSF with `-a` flag)
-- Scheduler-specific commands available:
-  - SLURM: `sacct`, `sinfo`
-  - LSF: `bhist`, `bhosts`
-  - PBS: `pbsnodes`, accounting logs
-  - UGE: `qacct`, `qhost`
-  - HTCondor: `condor_history`, `condor_status`
-
----
-
-## 📁 Repository Structure
-
-```
-cluster-job-analysis/
-├── README.md                           # This file
-│
-├── Export Scripts/
-│   ├── export_slurm_cluster_config.sh  # SLURM cluster inventory
-│   ├── export_lsf_comprehensive.sh     # LSF complete export
-│   ├── export_lsf_cluster_config.sh    # LSF cluster inventory
-│   ├── export_pbs_comprehensive.sh     # PBS complete export
-│   ├── export_pbs_cluster_config.sh    # PBS cluster inventory
-│   ├── export_uge_comprehensive.sh     # UGE complete export
-│   ├── export_uge_cluster_config.sh    # UGE cluster inventory
-│   ├── export_htcondor_data.sh         # HTCondor export
-│   └── export_cluster_configs_all.sh   # Auto-detect any scheduler
-│
-├── Utilities/
-│   ├── anonymize_cluster_data.sh       # Privacy-preserving anonymization
-│   ├── standardize_cluster_config.py   # Normalize config formats
-│   └── analyze_cluster_config.py       # Cluster capacity analysis
-│
-├── Analysis Scripts/
-│   ├── analyze_true_utilization.py     # Comprehensive utilization analysis
-│   ├── visualize_utilization.py        # Publication-quality charts
-│   ├── analyze_job_resource_efficiency.py  # Job-level resource usage
-│   ├── analyze_queue_wait_times.py     # Wait time statistics & patterns
-│   ├── analyze_workload_characteristics.py # Arrivals, heavy-tail, correlations
-│   ├── analyze_short_jobs_and_arrays.py    # Workflow steps & scheduler overhead
-│   ├── analyze_cross_user_impacts.py   # Submission abandonment triggers
-│   ├── analyze_concurrent_load.py      # Utilization over time (legacy)
-│   ├── analyze_submission_abandonment_events.py  # Test hypothesis (legacy)
-│   ├── analyze_jobs.py                 # Basic statistics
-│   ├── analyze_utilization.py          # Utilization metrics (legacy)
-│   ├── analyze_packing.py              # Node packing efficiency
-│   ├── analyze_slurm_cloud_bursting.py # Cloud ROI
-│   └── analyze_full_aws_migration.py   # Full migration analysis
-│
-├── Documentation/
-│   ├── COMPLETE_TOOLKIT_SUMMARY.md     # Master overview
-│   ├── LSF_EXPORT_GUIDE.md             # LSF detailed guide
-│   ├── PBS_EXPORT_GUIDE.md             # PBS detailed guide
-│   ├── UGE_EXPORT_GUIDE.md             # UGE/SGE detailed guide
-│   ├── MULTI_SCHEDULER_EXPORT_README.md # All schedulers reference
-│   ├── TWO_PART_EXPORT_GUIDE.md        # Why config + jobs matters
-│   ├── ANONYMIZATION_README.md         # Privacy workflow
-│   ├── INSTITUTIONAL_APPROVAL_CASE.md  # Getting approval
-│   ├── OSCAR_Cluster_Analysis.md       # Example analysis
-│   └── CLOUD_COMPARISON_ANALYSIS.md    # Cloud economics
-│
-└── Testing/
-    ├── test_anonymization.sh           # Validate anonymization
-    ├── generate_mock_user_group_data.py # Test data generation
-    └── generate_sample_data_with_users.sh # Sample data
+# Keep mapping.txt private! It's the key to re-identify users.
 ```
 
 ---
 
-## 📊 Analysis Capabilities
+## Anonymization
 
-### Core Analysis Tools
+The anonymization script creates deterministic mappings:
 
-#### 1. True Utilization Analysis
-**Script:** `analyze_true_utilization.py`
+**Before:**
+```csv
+user,group,job_id,cpus
+jsmith,research,12345,16
+ajones,physics,12346,32
+```
 
-Calculates cluster utilization at every job transition point (start/end):
-- Node-level metrics (busy/idle status)
-- CPU-level metrics (allocated vs capacity)
-- Memory-level metrics (allocated vs capacity)
-- Statistics: mean, median, percentiles (25th, 75th, 90th, 95th, 99th)
-- Time-weighted averages (accounts for duration)
-- Time series output for visualization
+**After:**
+```csv
+user,group,job_id,cpus
+user_0001,group_A,12345,16
+user_0002,group_B,12346,32
+```
 
-**Usage:**
+**Features:**
+- Deterministic: Same user always gets same ID
+- Preserves patterns: Behavioral analysis still valid
+- Secure: Original identities not recoverable without mapping file
+- Auto-detects columns: Handles any CSV with user/group data
+
+**Important:** Keep `mapping.txt` secure and private. It contains the key to re-identify users.
+
+---
+
+## Troubleshooting
+
+### SLURM: "sacct: command not found"
 ```bash
-python3 analyze_true_utilization.py jobs_anon.csv cluster_config.csv
-# Outputs: utilization_timeseries.csv, utilization_statistics.csv
+module load slurm  # or similar
+which sacct        # verify it's available
 ```
 
-**Documentation:** See [UTILIZATION_ANALYSIS_GUIDE.md](UTILIZATION_ANALYSIS_GUIDE.md)
-
-#### 2. Utilization Visualization
-**Script:** `visualize_utilization.py`
-
-Creates publication-quality charts (300 DPI):
-- CPU utilization timeline with mean/median lines
-- Memory utilization timeline
-- Combined CPU+Memory dual-panel chart
-- Distribution histograms
-- Daily average aggregations
-
-**Usage:**
+### LSF: "User not authorized"
 ```bash
-python3 visualize_utilization.py utilization_timeseries.csv
-# Outputs: 5 PNG charts
+bhist -a  # Use -a flag for all users (requires admin)
 ```
 
-#### 3. Job Resource Efficiency
-**Script:** `analyze_job_resource_efficiency.py`
-
-Analyzes requested vs. actually used resources:
-- CPU efficiency: (used / requested) × 100%
-- Memory efficiency: (used / requested) × 100%
-- GPU efficiency (if available)
-- Per-job, per-user, per-group statistics
-- Weekly trends and temporal patterns
-
-**Outputs:** 4 CSV files with efficiency metrics
-
-#### 4. Queue Wait Time Analysis
-**Script:** `analyze_queue_wait_times.py`
-
-Comprehensive wait time statistics with temporal patterns:
-- Time of day (24 hours)
-- Day of week (7 days)
-- Week of month (1-5)
-- Month of year (12 months)
-- Per-user and per-group statistics
-- Job size correlation analysis
-- Calendar time series
-
-**Outputs:** 8 CSV files with wait time patterns
-
-#### 5. Workload Characterization
-**Script:** `analyze_workload_characteristics.py`
-
-Statistical workload analysis:
-- **Arrival patterns**: Poisson testing, inter-arrival times
-- **Burstiness**: Index calculation (σ² - μ) / (σ² + μ)
-- **Group correlation**: Cross-correlation matrix
-- **Heavy-tailed distribution**: Power law exponent (Pareto α)
-- **Autocorrelation**: Multiple time lags (1h, 2h, 6h, 12h, 24h, 48h, 1week)
-- Jobs > 95th percentile runtime
-- % of CPU-hours consumed by heavy-tail jobs
-
-**Outputs:** 5 CSV files with statistical analysis
-
-#### 6. Short Jobs & Array Analysis
-**Script:** `analyze_short_jobs_and_arrays.py`
-
-Identifies workflow patterns and scheduler overhead:
-- Short runtime jobs (30s, 1min, 5min, 15min, 1hr thresholds)
-- Job array detection (rapid successive submissions)
-- Workflow sequence detection (chained dependent jobs)
-- Per-user and per-group patterns
-- Temporal distributions
-- **Scheduler overhead impact estimates**
-- System efficiency implications
-
-**Outputs:** 7 CSV files with job patterns and overhead analysis
-
-#### 7. Cross-User Impact Analysis
-**Script:** `analyze_cross_user_impacts.py`
-
-**🔥 NEW - Enhanced Submission Abandonment Study**
-
-Analyzes how individual user behaviors impact others and trigger submission abandonment:
-
-**Key Features:**
-- Identifies high-impact jobs (large resources, long runtimes)
-- Measures before/after effects on other users:
-  - Submission rate changes
-  - Wait time increases
-  - Active user count changes
-- Detects **submission abandonment triggers**
-- Identifies recurring patterns (e.g., "User X every Tuesday")
-- Temporal analysis of when impacts occur
-- Cross-group impact relationships
-
-**Example Insights Enabled:**
-- "User X's Tuesday batch jobs cause 2x wait time increase for others"
-- "When User Y submits >1000 core jobs, submission rate drops 40% within 1 hour"
-- "Group A's monthly jobs trigger submission abandonment in Group B"
-
-**Usage:**
+### PBS: "Permission denied"
 ```bash
-python3 analyze_cross_user_impacts.py jobs_anon.csv cluster_config.csv
+sudo ./export_pbs_comprehensive.sh ...  # PBS often requires sudo
 ```
 
-**Outputs:** 6 CSV files including:
-- `high_impact_jobs.csv` - Jobs with significant system impact
-- `impact_events.csv` - Specific incidents with before/after metrics
-- `user_impact_patterns.csv` - Recurring patterns per user
-- `submission_abandonment_triggers.csv` - Events that trigger abandonment
-- `temporal_impact_patterns.csv` - Day/time patterns of impacts
-- `cross_group_impacts.csv` - How groups affect each other
-
-**Provides both:**
-- ✅ General patterns over time
-- ✅ Specific data points (individual incidents)
-- ✅ Causal relationships (User X → System Y → Others Z)
-
----
-
-## 🎓 Use Cases
-
-### 1. Submission Abandonment Study
-
-**Hypothesis:** Users avoid submitting jobs when the queue is long.
-
-**Process:**
-1. Export job history from 10-20 HPC sites
-2. Anonymize all user data
-3. Analyze correlation between queue depth and submission rate
-4. Compare across different utilization levels
-
-**Expected Results:**
-- Overprovisioned clusters: weak effect (r ≈ -0.1)
-- Normally loaded: moderate effect (r ≈ -0.2 to -0.3)
-- Underprovisioned (4-7x): strong effect (r ≈ -0.4 to -0.5)
-
-### 2. True Utilization Calculation
-
-**Problem:** Job data only shows nodes that ran jobs, not total capacity.
-
-**Solution:**
-1. Export cluster configuration (all nodes)
-2. Export job history (what was used)
-3. Calculate: `utilization = peak_usage / total_capacity`
-
-**Example:**
-```
-Cluster capacity: 13,920 CPUs (from config)
-Peak concurrent:  12,500 CPUs (from jobs)
-True utilization: 89.8%
-```
-
-### 3. Cloud Bursting ROI
-
-**Analysis:**
-1. Identify peak usage periods
-2. Calculate overflow beyond on-prem capacity
-3. Price AWS spot instances for overflow
-4. Compare cost vs. expanding on-prem
-
-**Example Finding:**
-- OSCAR: $7.4M savings over 3 years with cloud bursting vs. 2x cluster expansion
-
-### 4. Cross-Scheduler Comparison
-
-**Question:** Do users behave differently on different schedulers?
-
-**Process:**
-1. Export from multiple sites with different schedulers
-2. Standardize all formats
-3. Compare submission patterns, utilization, abandonment behavior
-4. Control for utilization level and workload type
-
-### 5. Multi-Site Behavioral Studies
-
-**Goal:** Understand HPC usage patterns across the ecosystem
-
-**Requirements:**
-- 10-20 sites
-- Mixed schedulers (SLURM, LSF, PBS, UGE)
-- Mixed utilization (overprovisioned to heavily contended)
-- Mixed scales (100 to 10,000+ nodes)
-
----
-
-## 📖 Documentation
-
-### Getting Started
-- **[COMPLETE_TOOLKIT_SUMMARY.md](COMPLETE_TOOLKIT_SUMMARY.md)** - Complete overview of all tools
-- **[MULTI_SCHEDULER_EXPORT_README.md](MULTI_SCHEDULER_EXPORT_README.md)** - Quick reference for all schedulers
-- **[TWO_PART_EXPORT_GUIDE.md](TWO_PART_EXPORT_GUIDE.md)** - Why you need config + job data
-
-### Scheduler-Specific Guides
-- **[LSF_EXPORT_GUIDE.md](LSF_EXPORT_GUIDE.md)** - Complete IBM Spectrum LSF guide
-- **[PBS_EXPORT_GUIDE.md](PBS_EXPORT_GUIDE.md)** - Complete PBS/Torque guide
-- **[UGE_EXPORT_GUIDE.md](UGE_EXPORT_GUIDE.md)** - Complete UGE/SGE guide
-
-### Process Guides
-- **[ANONYMIZATION_README.md](ANONYMIZATION_README.md)** - Privacy and anonymization
-- **[INSTITUTIONAL_APPROVAL_CASE.md](INSTITUTIONAL_APPROVAL_CASE.md)** - Getting institutional approval
-
-### Analysis Examples
-- **[OSCAR_Cluster_Analysis.md](OSCAR_Cluster_Analysis.md)** - Brown University OSCAR analysis
-- **[CLOUD_COMPARISON_ANALYSIS.md](CLOUD_COMPARISON_ANALYSIS.md)** - Cloud economics comparison
-- **[USER_GROUP_ANALYSIS_OPPORTUNITIES.md](USER_GROUP_ANALYSIS_OPPORTUNITIES.md)** - Behavioral analysis ideas
-
----
-
-## 🔬 Example Results
-
-### OSCAR Cluster (Brown University)
-
-**Dataset:** 6,991,376 jobs over ~1 year
-
-**Key Findings:**
-- Median queue time: 1.93 minutes (overprovisioned!)
-- Peak concurrent: 14,645 CPUs
-- Mean concurrent: 7,883 CPUs
-- **Submission abandonment detected:** r = -0.09 (weak but present)
-
-**Conclusion:** Even on an overprovisioned cluster where queue checking provides minimal benefit, users still exhibit abandonment behavior. On heavily contended clusters, this effect would be much stronger.
-
-**Business Impact:** Cloud bursting could save $7.4M over 3 years vs. expanding on-prem capacity by 2x.
-
----
-
-## 🔐 Privacy & Security
-
-### Anonymization
-
-The toolkit provides **deterministic, privacy-preserving anonymization**:
-
-**What gets anonymized:**
-- ✅ Usernames → `user_0001`, `user_0002`, ...
-- ✅ Groups → `group_A`, `group_B`, ...
-- ✅ Accounts → `account_X`, `account_Y`, ...
-
-**What stays the same:**
-- ✅ All timestamps (submit, start, end)
-- ✅ All resource requests (CPUs, memory)
-- ✅ All usage patterns
-- ✅ Job dependencies and sequences
-
-**Mapping file security:**
+### UGE: "qacct: unknown option"
 ```bash
-# Mapping file links anonymous ↔ real identities
-chmod 600 mapping_secure.txt
-sudo mv mapping_secure.txt /root/secure/
-
-# Never share mapping file
-# Only share anonymized CSV
+# Check your UGE version
+qacct -help
+# Adjust script if needed for your version
 ```
 
-### Data Handling Best Practices
+### Export Takes Too Long
+```bash
+# Use shorter date ranges
+./export_lsf_comprehensive.sh 2024/10/01 2024/10/31  # Just October
 
-1. **Export** on secure system (scheduler head node)
-2. **Anonymize** immediately after export
-3. **Secure** mapping file (root-only access)
-4. **Delete** original export with real usernames
-5. **Encrypt** for transfer (GPG or SSH)
-6. **Share** only anonymized data
+# Or compress output
+./export_with_users.sh | gzip > output.csv.gz
+```
 
-See [ANONYMIZATION_README.md](ANONYMIZATION_README.md) for complete workflow.
+### CSV Has Weird Characters
+```bash
+# Force UTF-8 encoding
+export LC_ALL=en_US.UTF-8
+./export_with_users.sh
+```
 
 ---
 
-## 🌍 Supported Schedulers
+## Auto-Detection Script
 
-### SLURM (Simple Linux Utility for Resource Management)
+Don't know which scheduler you have?
 
-**Common in:** Universities, national labs, cloud HPC
-**Commands:** `sacct`, `sinfo`
-**Date format:** `YYYY-MM-DD`
-**Output:** Native CSV
-**Guide:** Built-in documentation + [MULTI_SCHEDULER_EXPORT_README.md](MULTI_SCHEDULER_EXPORT_README.md)
+```bash
+./export_cluster_configs_all.sh
+```
 
-### LSF (IBM Spectrum LSF)
+This will:
+1. Detect your scheduler type
+2. Run the appropriate export script
+3. Standardize the output format
 
-**Common in:** National labs, commercial HPC, financial services
-**Commands:** `bhist`, `bhosts`, `lshosts`
-**Date format:** `YYYY/MM/DD`
-**Output:** Text paragraphs → parsed to CSV
-**Guide:** [LSF_EXPORT_GUIDE.md](LSF_EXPORT_GUIDE.md)
+---
+
+## Output File Locations
+
+By default, scripts create files in the current directory:
+
+```
+slurm_jobs_with_users.csv          # SLURM job export
+slurm_cluster_config.csv            # SLURM cluster config
+lsf_jobs_comprehensive.csv          # LSF job export
+lsf_cluster_config.csv              # LSF cluster config
+pbs_jobs_comprehensive.csv          # PBS job export
+pbs_cluster_config.csv              # PBS cluster config
+uge_jobs_comprehensive.csv          # UGE job export
+uge_cluster_config.csv              # UGE cluster config
+htcondor_jobs.csv                   # HTCondor job export
+htcondor_cluster_config.csv         # HTCondor cluster config
+```
+
+---
+
+## Security & Privacy
+
+### Data Contains Sensitive Information
+
+Job data may include:
+- Usernames
+- Group memberships
+- Job submission patterns (can reveal research focus)
+- Resource usage (can indicate project importance)
+
+**Recommendations:**
+1. **Anonymize before sharing** outside your organization
+2. **Encrypt during transfer** (use scp, sftp, or encrypted email)
+3. **Secure storage** (restricted access, encrypted at rest)
+4. **Delete mapping files** after analysis if not needed
+5. **Get institutional approval** before collecting data
+
+### Anonymization is One-Way
+
+Without the mapping file, anonymization cannot be reversed. This means:
+- ✅ Safe to share anonymized data publicly
+- ✅ Cannot re-identify users from anonymized data alone
+- ⚠️ Keep mapping file secure if you need to re-identify later
+- ⚠️ Lose mapping file = permanently anonymized
+
+---
+
+## Scheduler-Specific Notes
+
+### SLURM
+
+**Advantages:**
+- Fast exports with `sacct`
+- Comprehensive data available
+- No special permissions usually needed
+
+**Limitations:**
+- Default retention period (often 30-90 days)
+- May need to query slurmdbd directly for older data
+
+**Tips:**
+```bash
+# Check retention period
+sacct --starttime=2020-01-01 --endtime=2020-01-02 -X
+# If this works, data goes back to 2020
+
+# Export from specific partition
+sacct -r partition_name ...
+```
+
+### IBM Spectrum LSF
+
+**Advantages:**
+- Rich job history via `bhist`
+- Good backwards compatibility
+
+**Limitations:**
+- Requires `-a` flag for admin access to all users
+- Date format specific (YYYY/MM/DD)
+- Can be slow on large datasets
+
+**Tips:**
+```bash
+# Test on small date range first
+bhist -a -l 2024/12/01 2024/12/01 | head
+
+# Run in background for large exports
+nohup ./export_lsf_comprehensive.sh 2024/01/01 2024/12/31 &
+```
 
 ### PBS/Torque/PBS Pro
 
-**Common in:** Universities, DOD, research institutions
-**Commands:** `pbsnodes`, accounting logs
-**Date format:** `YYYYMMDD`
-**Output:** Semicolon-delimited logs → parsed to CSV
-**Guide:** [PBS_EXPORT_GUIDE.md](PBS_EXPORT_GUIDE.md)
-**Note:** Requires root/admin access for accounting logs
+**Advantages:**
+- Detailed accounting logs
+- Long retention (often years)
 
-### UGE/SGE/OGE (Univa/Sun/Open Grid Engine)
+**Limitations:**
+- Usually requires sudo for log access
+- Log format varies by version
+- Parsing can be slow
 
-**Common in:** Legacy installations, academic clusters
-**Commands:** `qacct`, `qhost`
-**Date format:** `MM/DD/YYYY` ⚠️ **Unique!**
-**Output:** Text with separators → parsed to CSV
-**Guide:** [UGE_EXPORT_GUIDE.md](UGE_EXPORT_GUIDE.md)
+**Tips:**
+```bash
+# Check log location
+ls -lh /var/spool/pbs/server_priv/accounting/
+
+# If sudo required
+sudo ./export_pbs_comprehensive.sh 20240101 20241231
+
+# Or copy logs first (one-time sudo)
+sudo cp -r /var/spool/pbs/server_priv/accounting/ ~/pbs_logs/
+# Then modify script to read from ~/pbs_logs/
+```
+
+### UGE/SGE/OGE
+
+**Advantages:**
+- `qacct` provides structured output
+- Usually no special permissions needed
+
+**Limitations:**
+- Date format specific (MM/DD/YYYY)
+- May have gaps in data
+- Different vendors have slight variations
+
+**Tips:**
+```bash
+# Test qacct format
+qacct -j 12345  # Query a known job
+
+# Check available date range
+qacct -b 01/01/2020 -e 01/02/2020
+
+# Different UGE versions may need script adjustments
+```
 
 ### HTCondor
 
-**Common in:** High-throughput computing, OSG
-**Commands:** `condor_history`, `condor_status`
-**Date format:** Days ago (integer)
-**Output:** Tab-separated → converted to CSV
-**Guide:** [MULTI_SCHEDULER_EXPORT_README.md](MULTI_SCHEDULER_EXPORT_README.md)
+**Advantages:**
+- `condor_history` powerful query language
+- Usually complete history available
+
+**Limitations:**
+- Output format complex
+- May need multiple queries for all data
+
+**Tips:**
+```bash
+# Check history size
+condor_history -limit 10
+
+# If history is huge, limit by time
+condor_history -constraint 'JobStartDate >= 1704067200'  # Unix timestamp
+```
 
 ---
 
-## 💡 Tips & Best Practices
+## Data Format Standardization
 
-### Exporting Data
+If you have exports from multiple schedulers, use:
 
-1. **Start small** - Test with 1 month of data first
-2. **Check permissions** - Some schedulers require admin access
-3. **Verify output** - Always check CSV before anonymization
-4. **Export both parts** - Cluster config + job history
-5. **Document metadata** - Record scheduler version, date range, site info
+```bash
+python3 standardize_cluster_config.py input_config.csv
+```
 
-### Anonymization
-
-1. **Anonymize immediately** - Don't leave raw data sitting around
-2. **Secure mapping file** - Root-only access, encrypted backups
-3. **Verify anonymization** - Check no real usernames remain
-4. **Delete originals** - Remove raw export after anonymization
-5. **Test first** - Use test script on sample data
-
-### Analysis
-
-1. **Validate data** - Check for reasonable values, complete timestamps
-2. **Start with basics** - Run `analyze_jobs.py` first
-3. **Understand capacity** - Always analyze cluster config
-4. **Compare thoughtfully** - Control for utilization, workload, scale
-5. **Document assumptions** - Note data quality issues, filters applied
+This normalizes all scheduler-specific formats to a common structure.
 
 ---
 
-## 🤝 Contributing
+## Example Workflow
 
-This toolkit is designed for HPC research and operations. Contributions welcome:
+```bash
+# 1. Export data from your scheduler
+./export_with_users.sh
 
-- **Bug reports** - Scheduler-specific parsing issues
-- **New schedulers** - Add support for additional schedulers
-- **Analysis scripts** - New analytical approaches
-- **Documentation** - Improved guides, examples
-- **Test cases** - Validation on different environments
+# 2. Export cluster configuration
+./export_slurm_cluster_config.sh
 
----
+# 3. Anonymize for sharing
+./anonymize_cluster_data.sh \
+  slurm_jobs_with_users.csv \
+  jobs_anonymized.csv \
+  mapping.txt
 
-## 📄 License
+# 4. Share the anonymized data
+# Keep mapping.txt private!
+scp jobs_anonymized.csv remote:~/data/
+scp slurm_cluster_config.csv remote:~/data/
 
-MIT License - See LICENSE file for details
-
----
-
-## 🙏 Acknowledgments
-
-**Data Source:**
-- Brown University OSCAR cluster data used for initial validation
-
-**Schedulers:**
-- SLURM by SchedMD
-- IBM Spectrum LSF
-- Altair PBS Pro / OpenPBS / Torque
-- Univa Grid Engine / Sun Grid Engine / Open Grid Engine
-- HTCondor by University of Wisconsin-Madison
+# 5. Securely store mapping (optional)
+gpg --encrypt --recipient you@example.com mapping.txt
+rm mapping.txt  # Remove unencrypted version
+```
 
 ---
 
-## 📞 Support
+## File Sizes
 
-### Documentation
-Start with [COMPLETE_TOOLKIT_SUMMARY.md](COMPLETE_TOOLKIT_SUMMARY.md) for comprehensive overview.
+Expect approximately:
 
-### Scheduler-Specific Issues
-See scheduler guides:
-- [LSF_EXPORT_GUIDE.md](LSF_EXPORT_GUIDE.md)
-- [PBS_EXPORT_GUIDE.md](PBS_EXPORT_GUIDE.md)
-- [UGE_EXPORT_GUIDE.md](UGE_EXPORT_GUIDE.md)
+| Jobs | CSV Size (uncompressed) |
+|------|-------------------------|
+| 10,000 | ~2 MB |
+| 100,000 | ~20 MB |
+| 1,000,000 | ~200 MB |
+| 10,000,000 | ~2 GB |
 
-### Common Issues
-
-**"Command not found"**
-- Source scheduler environment file
-- Check scheduler installation path
-
-**"Permission denied"**
-- Some schedulers require admin access
-- See scheduler guide for fallback options
-
-**"No data exported"**
-- Verify date format for your scheduler
-- Check accounting is enabled
-- Confirm date range has data
-
-**Troubleshooting checklists** in each scheduler guide.
+**Tip:** Compress large files:
+```bash
+gzip jobs_export.csv
+# Result: jobs_export.csv.gz (typically 10-20% of original size)
+```
 
 ---
 
-## 🎯 Project Goals
+## License
 
-1. **Enable behavioral research** - Understand how users interact with HPC schedulers
-2. **Test submission abandonment** - Quantify avoidance behavior during congestion
-3. **Improve resource efficiency** - Data-driven provisioning decisions
-4. **Support cloud adoption** - ROI analysis for hybrid cloud
-5. **Cross-site comparison** - Learn from ecosystem-wide patterns
+MIT License - Free to use, modify, and distribute.
 
 ---
 
-## 📊 Project Status
+## Support
 
-**Current:** Production ready, all 5 major schedulers supported
-
-**Next Steps:**
-- Multi-site data collection (target: 10-20 sites)
-- Cross-scheduler behavioral comparison
-- Publication of findings
-- Cloud bursting ROI calculator web tool
+For issues or questions:
+1. Check the troubleshooting section above
+2. Review your scheduler's documentation
+3. Test with a small date range first
+4. Check file permissions and command availability
 
 ---
 
-## 🚀 Getting Started Checklist
+## What's Not Included
 
-- [ ] Choose your scheduler from [supported list](#supported-schedulers)
-- [ ] Read scheduler-specific [export guide](#documentation)
-- [ ] Set up scheduler environment (PATH, environment variables)
-- [ ] Test export on small date range (1 month)
-- [ ] Verify CSV output looks correct
-- [ ] Export full dataset (6-12 months recommended)
-- [ ] Export cluster configuration
-- [ ] Anonymize data using `anonymize_cluster_data.sh`
-- [ ] Secure mapping file (root-only access)
-- [ ] Run `analyze_jobs.py` for basic validation
-- [ ] Run `analyze_concurrent_load.py` for utilization
-- [ ] Run `analyze_submission_abandonment_events.py` to test hypothesis
-- [ ] Review [analysis documentation](#documentation)
-- [ ] Share findings (anonymized data only!)
+This is a **data collection toolkit** only. It does NOT include:
+- Analysis scripts
+- Visualization tools
+- Statistical analysis
+- Machine learning models
+- Cloud migration calculators
+
+These scripts simply export raw data in a standardized format. You can then analyze the data with your preferred tools (Python, R, Excel, etc.).
 
 ---
 
-**Ready to analyze your HPC cluster?** Start with your scheduler's [export guide](#documentation)! 📈
+## Contributing
+
+Improvements welcome! Common enhancements:
+- Additional scheduler support
+- Better error handling
+- Performance optimizations
+- Additional output formats (JSON, Parquet, etc.)
+
+---
+
+## Version
+
+Data Export Tools v2.0 - Simplified for data collection only.
