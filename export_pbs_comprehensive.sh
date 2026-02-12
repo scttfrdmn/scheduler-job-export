@@ -10,10 +10,30 @@
 
 set -euo pipefail
 
+# Load security libraries
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/validation.sh"
+source "$SCRIPT_DIR/security_logging.sh"
+
 # Configuration
 START_DATE="${1:-$(date -d '1 year ago' +%Y%m%d 2>/dev/null || date -v-1y +%Y%m%d)}"
 END_DATE="${2:-$(date +%Y%m%d)}"
 OUTPUT_FILE="pbs_jobs_with_users_$(date +%Y%m%d).csv"
+
+# Validate and sanitize date inputs
+if ! START_DATE=$(validate_and_sanitize_date "$START_DATE" "pbs"); then
+    log_validation_failure "date" "$START_DATE"
+    echo "ERROR: Invalid start date format" >&2
+    echo "Expected: YYYYMMDD (e.g., 20240131)" >&2
+    exit 1
+fi
+
+if ! END_DATE=$(validate_and_sanitize_date "$END_DATE" "pbs"); then
+    log_validation_failure "date" "$END_DATE"
+    echo "ERROR: Invalid end date format" >&2
+    echo "Expected: YYYYMMDD (e.g., 20241231)" >&2
+    exit 1
+fi
 
 echo "================================================================"
 echo "PBS/Torque Comprehensive Job Data Export"
@@ -22,6 +42,9 @@ echo ""
 echo "Date range: $START_DATE to $END_DATE"
 echo "Output file: $OUTPUT_FILE"
 echo ""
+
+# Log export start
+log_export_start "PBS" "start=$START_DATE end=$END_DATE output=$OUTPUT_FILE"
 
 # Detect PBS variant
 PBS_VARIANT="unknown"

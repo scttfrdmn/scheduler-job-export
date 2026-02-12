@@ -205,3 +205,98 @@ sanitize_filename() {
     # Replace any non-alphanumeric (except _ - .) with underscore
     echo "$filename" | tr -c '[:alnum:]_.-' '_'
 }
+
+# Sanitize general input (for dates, paths, etc.)
+sanitize_input() {
+    local input="$1"
+    # Keep only: alphanumeric, dash, slash, colon, underscore, dot (for dates/paths)
+    # Remove potentially dangerous characters
+    echo "$input" | tr -cd '[:alnum:]/-:_. '
+}
+
+# Detect potential injection attempts
+detect_injection_attempt() {
+    local input="$1"
+
+    # Check for common injection patterns
+    # Command substitution: $(...) or `...`
+    if [[ "$input" =~ \$\(|\` ]]; then
+        return 0  # Detected
+    fi
+
+    # Shell operators: ; | && || > < >> << &
+    if [[ "$input" =~ [;\|\&\>\<] ]]; then
+        return 0  # Detected
+    fi
+
+    # Newlines or carriage returns (potential log injection)
+    if [[ "$input" =~ $'\n'|$'\r' ]]; then
+        return 0  # Detected
+    fi
+
+    # Null bytes
+    if [[ "$input" =~ $'\0' ]]; then
+        return 0  # Detected
+    fi
+
+    return 1  # Clean
+}
+
+# Validate and sanitize date input with injection detection
+validate_and_sanitize_date() {
+    local date="$1"
+    local format="$2"  # slurm, lsf, pbs, or uge
+
+    # First check for injection attempts
+    if detect_injection_attempt "$date"; then
+        echo "ERROR: Potential injection attempt detected in date" >&2
+        return 1
+    fi
+
+    # Sanitize the input
+    local clean_date=$(sanitize_input "$date")
+
+    # Validate format-specific
+    case "$format" in
+        slurm)
+            validate_date_slurm "$clean_date" || return 1
+            ;;
+        lsf)
+            validate_date_lsf "$clean_date" || return 1
+            ;;
+        pbs)
+            validate_date_pbs "$clean_date" || return 1
+            ;;
+        uge)
+            validate_date_uge "$clean_date" || return 1
+            ;;
+        *)
+            echo "ERROR: Unknown date format: $format" >&2
+            return 1
+            ;;
+    esac
+
+    # Return the sanitized date
+    echo "$clean_date"
+    return 0
+}
+
+# Validate file path with security checks
+validate_and_sanitize_path() {
+    local path="$1"
+
+    # Check for injection attempts
+    if detect_injection_attempt "$path"; then
+        echo "ERROR: Potential injection attempt detected in path" >&2
+        return 1
+    fi
+
+    # Check for directory traversal
+    if ! validate_file_path "$path"; then
+        return 1
+    fi
+
+    # Sanitize and return
+    sanitize_input "$path"
+    return 0
+}

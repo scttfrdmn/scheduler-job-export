@@ -15,9 +15,29 @@
 
 set -euo pipefail
 
+# Load security libraries
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/validation.sh"
+source "$SCRIPT_DIR/security_logging.sh"
+
 # Date range configuration (command-line arguments or defaults)
 START_DATE="${1:-$(date -d '1 year ago' '+%Y-%m-%d' 2>/dev/null || date -v-1y '+%Y-%m-%d')}"
 END_DATE="${2:-$(date '+%Y-%m-%d')}"
+
+# Validate and sanitize date inputs
+if ! START_DATE=$(validate_and_sanitize_date "$START_DATE" "slurm"); then
+    log_validation_failure "date" "$START_DATE"
+    echo "ERROR: Invalid start date format" >&2
+    echo "Expected: YYYY-MM-DD (e.g., 2024-01-31)" >&2
+    exit 1
+fi
+
+if ! END_DATE=$(validate_and_sanitize_date "$END_DATE" "slurm"); then
+    log_validation_failure "date" "$END_DATE"
+    echo "ERROR: Invalid end date format" >&2
+    echo "Expected: YYYY-MM-DD (e.g., 2024-12-31)" >&2
+    exit 1
+fi
 
 # Output filename with timestamp
 OUTPUT_FILE="slurm_jobs_with_users_$(date +%Y%m%d).csv"
@@ -31,6 +51,9 @@ echo ""
 echo "Date range: $START_DATE to $END_DATE"
 echo "Output file: $OUTPUT_FILE"
 echo ""
+
+# Log export start
+log_export_start "SLURM" "start=$START_DATE end=$END_DATE output=$OUTPUT_FILE"
 
 # Export with sacct (pipe-separated output)
 echo "Querying SLURM accounting database..."
@@ -230,9 +253,14 @@ echo "================================================================"
 echo "Export complete!"
 echo "================================================================"
 echo ""
+
+# Calculate statistics and log completion
+TOTAL_JOBS=$(tail -n +2 "$OUTPUT_FILE" | wc -l)
+log_export_complete "SLURM" "$TOTAL_JOBS" "$OUTPUT_FILE"
+
 echo "Statistics:"
 echo "  Output file: $OUTPUT_FILE"
-echo "  Total jobs: $(tail -n +2 "$OUTPUT_FILE" | wc -l)"
+echo "  Total jobs: $TOTAL_JOBS"
 echo ""
 echo "Next steps:"
 echo "  1. Verify the export looks correct:"

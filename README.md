@@ -5,10 +5,22 @@
 [![Bash](https://img.shields.io/badge/Bash-3.2+-orange.svg)](https://www.gnu.org/software/bash/)
 [![Tests](https://img.shields.io/badge/Tests-Passing-brightgreen.svg)](#testing-and-linting)
 [![Code Style](https://img.shields.io/badge/Code%20Style-Ruff-black.svg)](https://github.com/astral-sh/ruff)
+[![Security](https://img.shields.io/badge/Security-A--Grade-brightgreen.svg)](SECURITY.md)
 
 Scripts for collecting **job history** and **cluster configuration** from HPC schedulers.
 
 **Supported Schedulers:** SLURM, IBM Spectrum LSF, PBS/Torque, UGE/SGE, HTCondor
+
+## Security Features
+
+✓ **Safe by default** - All scripts use secure bash practices (`set -euo pipefail`)
+✓ **Input validation** - Date parameters and file paths validated and sanitized
+✓ **Injection protection** - Detects and blocks command injection attempts
+✓ **Audit logging** - Security events logged for compliance
+✓ **Secure permissions** - Sensitive files protected (chmod 600)
+✓ **Fuzzing tested** - Automated security test suite included
+
+See [SECURITY.md](SECURITY.md) for complete security documentation and audit results.
 
 ---
 

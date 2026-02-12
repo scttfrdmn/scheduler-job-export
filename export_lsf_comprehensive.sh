@@ -8,10 +8,30 @@
 
 set -euo pipefail
 
+# Load security libraries
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/validation.sh"
+source "$SCRIPT_DIR/security_logging.sh"
+
 # Configuration
 START_DATE="${1:-$(date -d '1 year ago' '+%Y/%m/%d' 2>/dev/null || date -v-1y '+%Y/%m/%d')}"
 END_DATE="${2:-$(date '+%Y/%m/%d')}"
 OUTPUT_FILE="lsf_jobs_with_users_$(date +%Y%m%d).csv"
+
+# Validate and sanitize date inputs
+if ! START_DATE=$(validate_and_sanitize_date "$START_DATE" "lsf"); then
+    log_validation_failure "date" "$START_DATE"
+    echo "ERROR: Invalid start date format" >&2
+    echo "Expected: YYYY/MM/DD (e.g., 2024/01/31)" >&2
+    exit 1
+fi
+
+if ! END_DATE=$(validate_and_sanitize_date "$END_DATE" "lsf"); then
+    log_validation_failure "date" "$END_DATE"
+    echo "ERROR: Invalid end date format" >&2
+    echo "Expected: YYYY/MM/DD (e.g., 2024/12/31)" >&2
+    exit 1
+fi
 
 echo "================================================================"
 echo "LSF Comprehensive Job Data Export"
@@ -20,6 +40,9 @@ echo ""
 echo "Date range: $START_DATE to $END_DATE"
 echo "Output file: $OUTPUT_FILE"
 echo ""
+
+# Log export start
+log_export_start "LSF" "start=$START_DATE end=$END_DATE output=$OUTPUT_FILE"
 
 # Check if bhist is available
 if ! command -v bhist &> /dev/null; then
