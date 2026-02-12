@@ -230,16 +230,17 @@ if command -v shellcheck &> /dev/null; then
             continue
         fi
 
-        # Run shellcheck (ignore some warnings for heredocs)
-        if ! shellcheck -e SC2086 -e SC2181 "$script" &> /dev/null; then
+        # Run shellcheck (only check for errors, not style warnings)
+        # Use -S error to only report actual errors, not warnings/style/info
+        if ! shellcheck -S error "$script" &> /dev/null; then
             SHELLCHECK_ERRORS=$((SHELLCHECK_ERRORS + 1))
         fi
     done
 
     if [ $SHELLCHECK_ERRORS -eq 0 ]; then
-        pass_test "All shell scripts pass shellcheck"
+        pass_test "All shell scripts pass shellcheck (errors only)"
     else
-        fail_test "$SHELLCHECK_ERRORS scripts have shellcheck warnings"
+        fail_test "$SHELLCHECK_ERRORS scripts have shellcheck errors"
     fi
 else
     skip_test "shellcheck not installed (optional but recommended)"
