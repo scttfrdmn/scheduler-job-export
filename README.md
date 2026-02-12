@@ -1,4 +1,4 @@
-# Cluster Job Analysis
+# Scheduler Data Export
 
 Scripts for collecting **job history** and **cluster configuration** from HPC schedulers.
 
