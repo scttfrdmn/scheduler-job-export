@@ -50,6 +50,9 @@ condor_history -constraint "CompletionDate > (time() - ($DAYS_AGO * 86400))" \
     JobStartDate \
     CompletionDate \
     ExitCode \
+    MemoryUsage \
+    RemoteSysCpu \
+    RemoteUserCpu \
     > "$TEMP_FILE"
 
 echo "Parsing HTCondor output into CSV format..."
@@ -103,6 +106,29 @@ with open(sys.argv[1], 'r') as f:
         if '@' in nodelist:
             nodelist = nodelist.split('@')[1].split(':')[0]
 
+        # Calculate actual resource usage
+        mem_used = rec.get('MemoryUsage', '')  # In MB
+
+        # CPU time used (sys + user CPU in seconds)
+        cpu_time_used = ''
+        sys_cpu = rec.get('RemoteSysCpu', '0')
+        user_cpu = rec.get('RemoteUserCpu', '0')
+        try:
+            cpu_seconds = float(sys_cpu) + float(user_cpu)
+            cpu_time_used = str(int(cpu_seconds))
+        except:
+            pass
+
+        # Walltime used (completion - start)
+        walltime_used = ''
+        try:
+            start_ts = int(float(rec.get('JobStartDate', '0')))
+            end_ts = int(float(rec.get('CompletionDate', '0')))
+            if start_ts > 0 and end_ts > 0:
+                walltime_used = str(end_ts - start_ts)
+        except:
+            pass
+
         record = {
             'user': rec.get('Owner', ''),
             'group': group,
@@ -110,7 +136,7 @@ with open(sys.argv[1], 'r') as f:
             'job_id': f"{rec.get('ClusterId', '')}.{rec.get('ProcId', '')}",
             'job_name': '',  # HTCondor doesn't have job name in history by default
             'queue': '',  # HTCondor doesn't use queues in same way
-            'cpus': rec.get('RequestCpus', '1'),
+            'cpus_req': rec.get('RequestCpus', '1'),
             'mem_req': rec.get('RequestMemory', ''),  # In MB
             'nodes': '1',  # HTCondor jobs typically run on single node
             'nodelist': nodelist,
@@ -118,6 +144,9 @@ with open(sys.argv[1], 'r') as f:
             'start_time': convert_time(rec.get('JobStartDate', '')),
             'end_time': convert_time(rec.get('CompletionDate', '')),
             'exit_status': rec.get('ExitCode', ''),
+            'mem_used': mem_used,
+            'cpu_time_used': cpu_time_used,
+            'walltime_used': walltime_used,
         }
         records.append(record)
 
@@ -126,8 +155,9 @@ print(f"Parsed {len(records)} job records", file=sys.stderr)
 # Write CSV
 fieldnames = [
     'user', 'group', 'account', 'job_id', 'job_name', 'queue',
-    'cpus', 'mem_req', 'nodes', 'nodelist', 'submit_time',
-    'start_time', 'end_time', 'exit_status'
+    'cpus_req', 'mem_req', 'nodes', 'nodelist', 'submit_time',
+    'start_time', 'end_time', 'exit_status', 'mem_used',
+    'cpu_time_used', 'walltime_used'
 ]
 
 with open(sys.argv[2], 'w', newline='') as csvfile:
