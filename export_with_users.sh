@@ -258,6 +258,9 @@ echo ""
 TOTAL_JOBS=$(tail -n +2 "$OUTPUT_FILE" | wc -l)
 log_export_complete "SLURM" "$TOTAL_JOBS" "$OUTPUT_FILE"
 
+# Generate integrity checksum
+generate_checksum "$OUTPUT_FILE"
+
 echo "Statistics:"
 echo "  Output file: $OUTPUT_FILE"
 echo "  Total jobs: $TOTAL_JOBS"

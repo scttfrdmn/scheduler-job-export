@@ -95,8 +95,13 @@ if [ -z "$ACCT_DIR" ]; then
 fi
 
 if [ ! -r "$ACCT_DIR" ]; then
-    echo "ERROR: Cannot read accounting directory: $ACCT_DIR"
+    if [ "${VERBOSE:-0}" -eq 1 ]; then
+        echo "ERROR: Cannot read accounting directory: $ACCT_DIR"
+    else
+        echo "ERROR: Cannot read accounting directory (set VERBOSE=1 for path)"
+    fi
     echo "You may need sudo/root access to read PBS accounting logs"
+    log_permission_issue "accounting_directory" "read"
     exit 1
 fi
 
@@ -127,8 +132,16 @@ done
 if [ ${#ACCT_FILES[@]} -eq 0 ]; then
     echo "ERROR: No accounting files found in date range $START_DATE to $END_DATE"
     echo ""
-    echo "Available files:"
-    ls -1 "$ACCT_DIR" | head -20
+
+    # Show directory listing only in verbose mode (avoid information disclosure)
+    if [ "${VERBOSE:-0}" -eq 1 ]; then
+        echo "Available files in $ACCT_DIR:"
+        ls -1 "$ACCT_DIR" | head -20
+    else
+        echo "Set VERBOSE=1 to see available files"
+        echo "Example: VERBOSE=1 ./export_pbs_comprehensive.sh"
+    fi
+
     exit 1
 fi
 
@@ -394,6 +407,53 @@ if dates_with_jobs:
 
 print(file=sys.stderr)
 PYTHON_EOF
+
+# Validate accounting files array before passing to Python (security check)
+echo "Validating accounting files..."
+VALIDATION_FAILED=0
+
+for file in "${ACCT_FILES[@]}"; do
+    # Check file exists
+    if [ ! -e "$file" ]; then
+        echo "ERROR: Accounting file does not exist: $file" >&2
+        log_validation_failure "file_exists" "$file"
+        VALIDATION_FAILED=1
+        continue
+    fi
+
+    # Check it's a regular file (not directory or special file)
+    if [ ! -f "$file" ]; then
+        echo "ERROR: Not a regular file: $file" >&2
+        log_validation_failure "file_type" "$file"
+        VALIDATION_FAILED=1
+        continue
+    fi
+
+    # Check file is readable
+    if [ ! -r "$file" ]; then
+        echo "ERROR: Cannot read accounting file: $file" >&2
+        log_permission_issue "$file" "read"
+        VALIDATION_FAILED=1
+        continue
+    fi
+
+    # Check file size is reasonable (not empty, not suspiciously large)
+    file_size=$(stat -f%z "$file" 2>/dev/null || stat -c%s "$file" 2>/dev/null || echo "0")
+    if [ "$file_size" -eq 0 ]; then
+        echo "WARNING: Accounting file is empty: $file" >&2
+        log_validation_failure "file_empty" "$file"
+    elif [ "$file_size" -gt 10737418240 ]; then  # > 10GB
+        echo "WARNING: Accounting file is very large (>10GB): $file" >&2
+    fi
+done
+
+if [ $VALIDATION_FAILED -eq 1 ]; then
+    echo "ERROR: Accounting file validation failed" >&2
+    echo "Cannot proceed with invalid or inaccessible files" >&2
+    exit 1
+fi
+
+echo "✓ All accounting files validated"
 
 python3 - "${ACCT_FILES[@]}" "$OUTPUT_FILE"
 

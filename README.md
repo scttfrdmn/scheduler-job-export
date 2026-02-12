@@ -5,7 +5,7 @@
 [![Bash](https://img.shields.io/badge/Bash-3.2+-orange.svg)](https://www.gnu.org/software/bash/)
 [![Tests](https://img.shields.io/badge/Tests-Passing-brightgreen.svg)](#testing-and-linting)
 [![Code Style](https://img.shields.io/badge/Code%20Style-Ruff-black.svg)](https://github.com/astral-sh/ruff)
-[![Security](https://img.shields.io/badge/Security-A--Grade-brightgreen.svg)](SECURITY.md)
+[![Security](https://img.shields.io/badge/Security-A%20Grade-brightgreen.svg)](SECURITY.md)
 
 Scripts for collecting **job history** and **cluster configuration** from HPC schedulers.
 

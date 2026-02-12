@@ -154,6 +154,84 @@ security_stats() {
     grep '\[ALERT\]' "$SECURITY_LOG" | tail -10
 }
 
+# Generate SHA256 checksum for file integrity verification
+generate_checksum() {
+    local file="$1"
+    local checksum_file="${file}.sha256"
+
+    if [ ! -f "$file" ]; then
+        log_error "Cannot generate checksum: file not found: $file"
+        return 1
+    fi
+
+    # Generate checksum
+    if command -v sha256sum &> /dev/null; then
+        sha256sum "$file" > "$checksum_file"
+    elif command -v shasum &> /dev/null; then
+        shasum -a 256 "$file" > "$checksum_file"
+    else
+        log_error "No SHA256 tool available (tried sha256sum, shasum)"
+        return 1
+    fi
+
+    # Secure the checksum file
+    chmod 600 "$checksum_file"
+
+    log_info "Checksum generated: $checksum_file"
+    echo ""
+    echo "File Integrity Checksum:"
+    echo "  File: $(basename "$file")"
+    echo "  SHA256: $(cat "$checksum_file")"
+    echo "  Checksum file: $checksum_file"
+    echo ""
+    echo "Verify integrity with:"
+    if command -v sha256sum &> /dev/null; then
+        echo "  sha256sum -c $checksum_file"
+    else
+        echo "  shasum -a 256 -c $checksum_file"
+    fi
+
+    return 0
+}
+
+# Verify file checksum
+verify_checksum() {
+    local file="$1"
+    local checksum_file="${file}.sha256"
+
+    if [ ! -f "$checksum_file" ]; then
+        log_error "Checksum file not found: $checksum_file"
+        return 1
+    fi
+
+    echo "Verifying checksum for: $(basename "$file")"
+
+    if command -v sha256sum &> /dev/null; then
+        if sha256sum -c "$checksum_file" 2>&1 | grep -q "OK"; then
+            log_info "Checksum verification: PASS for $file"
+            echo "✓ Checksum verification: PASS"
+            return 0
+        else
+            log_security_event "ALERT" "Checksum verification FAILED for $file"
+            echo "✗ Checksum verification: FAILED"
+            return 1
+        fi
+    elif command -v shasum &> /dev/null; then
+        if shasum -a 256 -c "$checksum_file" 2>&1 | grep -q "OK"; then
+            log_info "Checksum verification: PASS for $file"
+            echo "✓ Checksum verification: PASS"
+            return 0
+        else
+            log_security_event "ALERT" "Checksum verification FAILED for $file"
+            echo "✗ Checksum verification: FAILED"
+            return 1
+        fi
+    else
+        log_error "No SHA256 tool available for verification"
+        return 1
+    fi
+}
+
 # Export functions for use by other scripts
 export -f log_security_event
 export -f log_export_start
@@ -164,3 +242,5 @@ export -f log_anonymization
 export -f log_file_access
 export -f log_permission_issue
 export -f log_security_check
+export -f generate_checksum
+export -f verify_checksum

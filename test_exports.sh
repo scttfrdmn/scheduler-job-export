@@ -246,6 +246,63 @@ else
 fi
 echo ""
 
+# Test 9: File permission security
+echo "Test 9: File permission security"
+
+# Test that security-sensitive files would have secure permissions
+PERMISSION_ISSUES=0
+
+# Check security_logging.sh creates secure log file
+source security_logging.sh
+init_security_log
+
+if [ -f "$SECURITY_LOG" ]; then
+    # Get file permissions (portable way)
+    if ls -l "$SECURITY_LOG" | grep -q '^-rw-------'; then
+        : # Permissions are correct (600)
+    elif ls -l "$SECURITY_LOG" | grep -q '^-rw-r--r--'; then
+        echo "  → Security log has weak permissions (644 instead of 600)"
+        PERMISSION_ISSUES=$((PERMISSION_ISSUES + 1))
+    else
+        echo "  → Security log has unexpected permissions"
+        PERMISSION_ISSUES=$((PERMISSION_ISSUES + 1))
+    fi
+fi
+
+# Test anonymization creates secure mapping file
+TEST_MAP="$TEMP_DIR/test_mapping.txt"
+if ./anonymize_cluster_data.sh "$TEMP_DIR/test_input.csv" "$TEMP_DIR/test_anon_output.csv" "$TEST_MAP" &> /dev/null; then
+    if [ -f "$TEST_MAP" ]; then
+        if ls -l "$TEST_MAP" | grep -q '^-rw-------'; then
+            : # Permissions are correct (600)
+        else
+            echo "  → Mapping file has weak permissions (should be 600)"
+            PERMISSION_ISSUES=$((PERMISSION_ISSUES + 1))
+        fi
+    fi
+fi
+
+# Test that checksum files are created with secure permissions
+TEST_FILE="$TEMP_DIR/test_checksum.csv"
+echo "test,data" > "$TEST_FILE"
+if generate_checksum "$TEST_FILE" &> /dev/null; then
+    if [ -f "${TEST_FILE}.sha256" ]; then
+        if ls -l "${TEST_FILE}.sha256" | grep -q '^-rw-------'; then
+            : # Permissions are correct (600)
+        else
+            echo "  → Checksum file has weak permissions (should be 600)"
+            PERMISSION_ISSUES=$((PERMISSION_ISSUES + 1))
+        fi
+    fi
+fi
+
+if [ $PERMISSION_ISSUES -eq 0 ]; then
+    pass_test "All sensitive files have secure permissions (600)"
+else
+    fail_test "$PERMISSION_ISSUES files have insecure permissions"
+fi
+echo ""
+
 # Summary
 echo "================================================================"
 echo "TEST SUMMARY"

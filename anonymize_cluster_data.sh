@@ -164,6 +164,95 @@ if [ -z "$USER_COL" ] && [ -z "$GROUP_COL" ] && [ -z "$HOSTNAME_COL" ]; then
     exit 1
 fi
 
+# Validate column data content (security check)
+log_info "Validating column data integrity..."
+
+validate_column_data() {
+    local col_num="$1"
+    local col_name="$2"
+    local col_type="$3"  # user, group, or hostname
+
+    # Sample first 10 data rows (skip header)
+    local sample=$(tail -n +2 "$INPUT_CSV" | head -10 | cut -d',' -f"$col_num" | tr -d '"')
+
+    # Count non-empty values
+    local non_empty=$(echo "$sample" | grep -v '^$' | wc -l | tr -d ' ')
+
+    if [ "$non_empty" -eq 0 ]; then
+        log_warn "Column '$col_name' appears to be empty in sample data"
+        return 1
+    fi
+
+    # Validate data patterns based on type
+    case "$col_type" in
+        user)
+            # Users should be alphanumeric with optional dash, underscore, dot
+            if echo "$sample" | grep -qE '^[a-zA-Z0-9._-]+$'; then
+                log_info "✓ User column '$col_name' data looks valid"
+                return 0
+            else
+                log_warn "⚠ User column '$col_name' contains unexpected characters"
+                log_warn "Sample values:"
+                echo "$sample" | head -3 | sed 's/^/    /' >&2
+                return 1
+            fi
+            ;;
+        group)
+            # Groups similar to users
+            if echo "$sample" | grep -qE '^[a-zA-Z0-9._-]+$'; then
+                log_info "✓ Group column '$col_name' data looks valid"
+                return 0
+            else
+                log_warn "⚠ Group column '$col_name' contains unexpected characters"
+                return 1
+            fi
+            ;;
+        hostname)
+            # Hostnames can have dots, dashes, alphanumeric, and commas (for nodelists)
+            if echo "$sample" | grep -qE '^[a-zA-Z0-9.,:_-]+$'; then
+                log_info "✓ Hostname column '$col_name' data looks valid"
+                return 0
+            else
+                log_warn "⚠ Hostname column '$col_name' contains unexpected characters"
+                return 1
+            fi
+            ;;
+    esac
+}
+
+# Validate detected columns
+VALIDATION_WARNINGS=0
+
+if [ -n "$USER_COL" ]; then
+    if ! validate_column_data "$USER_COL_NUM" "$USER_COL" "user"; then
+        VALIDATION_WARNINGS=$((VALIDATION_WARNINGS + 1))
+    fi
+fi
+
+if [ -n "$GROUP_COL" ]; then
+    if ! validate_column_data "$GROUP_COL_NUM" "$GROUP_COL" "group"; then
+        VALIDATION_WARNINGS=$((VALIDATION_WARNINGS + 1))
+    fi
+fi
+
+if [ -n "$HOSTNAME_COL" ]; then
+    if ! validate_column_data "$HOSTNAME_COL_NUM" "$HOSTNAME_COL" "hostname"; then
+        VALIDATION_WARNINGS=$((VALIDATION_WARNINGS + 1))
+    fi
+fi
+
+# Ask user to confirm if warnings found
+if [ $VALIDATION_WARNINGS -gt 0 ]; then
+    log_warn "Found $VALIDATION_WARNINGS validation warnings"
+    echo ""
+    read -p "Continue with anonymization anyway? (yes/no): " confirm
+    if [[ "$confirm" != "yes" ]]; then
+        log_error "Anonymization cancelled by user due to validation warnings"
+        exit 1
+    fi
+    log_info "User confirmed to continue despite warnings"
+fi
+
 # Extract unique users, groups, and hostnames
 log_info "Extracting unique users, groups, and hostnames..."
 
