@@ -88,12 +88,20 @@ All scripts produce standardized CSV format with these core columns:
 | `submit_time` | When job was submitted |
 | `start_time` | When job started running |
 | `end_time` | When job completed |
-| `exit_status` | Job exit code |
+| `exit_status` | Job exit code (0=success, non-zero=failure) |
+
+**Important:** All jobs are captured regardless of outcome - successful completions, failures, cancellations, timeouts, OOM kills, and node failures are all included.
 
 **Scheduler-specific columns:**
 - **LSF/PBS/UGE:** Include `queue` column
-- **LSF/SLURM:** Include `status` column (job state)
+- **LSF/SLURM:** Include `status` column (COMPLETED, FAILED, CANCELLED, TIMEOUT, etc.)
 - **UGE/SGE:** Include `pe_name` (parallel environment) and `slots` columns for PE job analysis
+
+**Exit Status and Failure Tracking:**
+- **SLURM:** `exit_status` format is `exit_code:signal` (e.g., `1:0`=failed, `137:0`=killed, `0:15`=terminated)
+- **LSF:** Both `exit_status` (numeric) and `status` (DONE/EXIT) captured
+- **PBS/UGE:** Numeric `exit_status` where 0=success, non-zero=failure
+- **All schedulers:** Failed, cancelled, timeout, and OOM jobs are included (not filtered)
 
 **Cluster Config CSV:**
 
