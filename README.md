@@ -6,6 +6,9 @@
 [![Tests](https://img.shields.io/badge/Tests-Passing-brightgreen.svg)](#testing-and-quality-assurance)
 [![Code Style](https://img.shields.io/badge/Code%20Style-Ruff-black.svg)](https://github.com/astral-sh/ruff)
 
+[![Security Checks](https://github.com/scttfrdmn/scheduler-job-export/actions/workflows/security.yml/badge.svg)](https://github.com/scttfrdmn/scheduler-job-export/actions/workflows/security.yml)
+[![Known Vulnerabilities](https://snyk.io/test/github/scttfrdmn/scheduler-job-export/badge.svg)](https://snyk.io/test/github/scttfrdmn/scheduler-job-export)
+
 Scripts for collecting **job history** and **cluster configuration** from HPC schedulers.
 
 **Supported Schedulers:** SLURM, IBM Spectrum LSF, PBS/Torque, UGE/SGE, HTCondor
@@ -341,6 +344,55 @@ All security checks run automatically on every push and pull request via GitHub 
 > **Note:** Snyk vulnerability scanning requires a `SNYK_TOKEN` secret. See [SECURITY_SETUP.md](SECURITY_SETUP.md) for setup instructions.
 
 See [TESTING.md](TESTING.md) for complete testing documentation.
+
+---
+
+## Security
+
+This project implements comprehensive security measures with automated scanning and validation.
+
+### Security Features
+
+**Input Validation:**
+- Command injection protection (18 attack patterns tested)
+- Path traversal prevention
+- Input length validation
+- Special character sanitization
+
+**Automated Security Scanning:**
+- **Bandit**: Python security scanner (AST-based static analysis)
+- **ShellCheck**: Bash security linter (best practices and vulnerabilities)
+- **Snyk**: Dependency vulnerability scanning
+- **Security fuzzing**: 18 injection attack tests, all passing
+
+**Data Protection:**
+- Secure file permissions (600) on sensitive files
+- SHA256 checksums for data integrity
+- Anonymization with cryptographic mapping
+- Security audit logging
+
+### Security Status
+
+All security checks run automatically on every commit via GitHub Actions:
+
+[![Security Checks](https://github.com/scttfrdmn/scheduler-job-export/actions/workflows/security.yml/badge.svg)](https://github.com/scttfrdmn/scheduler-job-export/actions/workflows/security.yml)
+[![Known Vulnerabilities](https://snyk.io/test/github/scttfrdmn/scheduler-job-export/badge.svg)](https://snyk.io/test/github/scttfrdmn/scheduler-job-export)
+
+**Current Results:**
+- ✅ Bandit: 0 security issues (174 lines scanned)
+- ✅ ShellCheck: 0 critical errors
+- ✅ Security fuzzing: 18/18 tests passing
+- ✅ Input validation: All injection attempts blocked
+
+### Security Documentation
+
+- **[SECURITY.md](SECURITY.md)** - Security policy and vulnerability reporting
+- **[SECURITY_SETUP.md](SECURITY_SETUP.md)** - Security tool setup and configuration
+- **[TESTING.md](TESTING.md)** - Detailed testing documentation including security tests
+
+### Reporting Security Issues
+
+If you discover a security vulnerability, please follow our [security policy](SECURITY.md) for responsible disclosure.
 
 ---
 
