@@ -59,6 +59,62 @@ else
 fi
 
 echo ""
+echo ""
+
+# Run Bandit Python security scanner (optional)
+echo "Step 3: Running Bandit security scanner..."
+echo "================================================================"
+echo ""
+
+if command -v bandit &> /dev/null; then
+    if ./run_bandit.sh; then
+        echo ""
+        echo "✓ Bandit security scan passed"
+        CHECKS_PASSED=$((CHECKS_PASSED + 1))
+    else
+        echo ""
+        echo "✗ Bandit security scan failed"
+        CHECKS_FAILED=$((CHECKS_FAILED + 1))
+    fi
+else
+    echo "⊘ Skipping Bandit (not installed)"
+    echo ""
+    echo "To install Bandit:"
+    echo "  pip install bandit"
+    echo ""
+fi
+
+echo ""
+echo ""
+
+# Run ShellCheck bash linter (optional)
+echo "Step 4: Running ShellCheck linter..."
+echo "================================================================"
+echo ""
+
+if command -v shellcheck &> /dev/null; then
+    if ./run_shellcheck.sh; then
+        echo ""
+        echo "✓ ShellCheck passed"
+        CHECKS_PASSED=$((CHECKS_PASSED + 1))
+    else
+        echo ""
+        echo "✗ ShellCheck failed"
+        CHECKS_FAILED=$((CHECKS_FAILED + 1))
+    fi
+else
+    echo "⊘ Skipping ShellCheck (not installed)"
+    echo ""
+    echo "To install ShellCheck:"
+    echo "  # macOS"
+    echo "  brew install shellcheck"
+    echo ""
+    echo "  # Ubuntu/Debian"
+    echo "  apt-get install shellcheck"
+    echo ""
+fi
+
+echo ""
 echo "================================================================"
 echo "FINAL SUMMARY"
 echo "================================================================"

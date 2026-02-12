@@ -1,0 +1,21 @@
+# ShellCheck Configuration
+# https://www.shellcheck.net/
+
+# Disable specific warnings with justification:
+
+# SC2086: Double quote to prevent globbing and word splitting
+# We intentionally use unquoted variables in some safe contexts
+disable=SC2086
+
+# SC2181: Check exit code directly with e.g. 'if mycmd;', not indirectly with $?
+# We use $? for clarity in some cases
+# disable=SC2181
+
+# Enable optional checks
+enable=all
+
+# Set shell dialect
+shell=bash
+
+# External sources (files we source)
+# source-path=SCRIPTDIR

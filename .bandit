@@ -1,0 +1,17 @@
+# Bandit Security Scanner Configuration
+# https://bandit.readthedocs.io/
+
+exclude_dirs:
+  - '/test'
+  - '/.git'
+  - '/__pycache__'
+  - '/.venv'
+  - '/venv'
+
+# Test IDs to skip (with justification)
+# B404,B603,B607: We use subprocess deliberately in controlled contexts
+# Our use of subprocess is necessary for shell operations and is validated
+skips:
+  - B404
+  - B603
+  - B607

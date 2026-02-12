@@ -1,0 +1,68 @@
+name: Security Checks
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  security-scan:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+
+    - name: Install Python security tools
+      run: |
+        pip install bandit ruff
+
+    - name: Install ShellCheck
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y shellcheck
+
+    - name: Run Bandit (Python Security Scanner)
+      run: |
+        ./run_bandit.sh
+      continue-on-error: false
+
+    - name: Run ShellCheck (Bash Security Linter)
+      run: |
+        ./run_shellcheck.sh
+      continue-on-error: true  # Allow warnings
+
+    - name: Run Ruff (Python Linter)
+      run: |
+        ./lint_python.sh
+      continue-on-error: true  # Allow warnings
+
+    - name: Run Security Fuzzing Tests
+      run: |
+        ./security_tests.sh
+      continue-on-error: false
+
+    - name: Run Test Harness
+      run: |
+        ./test_exports.sh
+      continue-on-error: false
+
+  snyk-scan:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Run Snyk to check for vulnerabilities
+      uses: snyk/actions/python@master
+      continue-on-error: true  # Don't fail build on vulnerabilities
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      with:
+        command: test
