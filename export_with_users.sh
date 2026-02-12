@@ -35,7 +35,7 @@ echo ""
 # Export with sacct (pipe-separated output)
 echo "Querying SLURM accounting database..."
 sacct -a \
-  --format=User,Group,Account,JobID,JobName,ReqCPUS,ReqMem,NNodes,NodeList,Submit,Start,End,ExitCode,State \
+  --format=User,Group,Account,JobID,JobName,ReqCPUS,ReqMem,NNodes,NodeList,Submit,Start,End,ExitCode,State,MaxRSS,TotalCPU,Elapsed,AllocCPUS \
   --starttime "$START_DATE" \
   --endtime "$END_DATE" \
   --parsable2 \
@@ -63,8 +63,9 @@ data_lines = lines[1:]
 # Standardized fieldnames matching LSF/PBS/UGE format
 fieldnames = [
     'user', 'group', 'account', 'job_id', 'job_name',
-    'cpus', 'mem_req', 'nodes', 'nodelist',
-    'submit_time', 'start_time', 'end_time', 'exit_status', 'status'
+    'cpus_req', 'mem_req', 'nodes', 'nodelist',
+    'submit_time', 'start_time', 'end_time', 'exit_status', 'status',
+    'mem_used', 'cpu_time_used', 'walltime_used', 'cpus_alloc'
 ]
 
 with open(output_file, 'w', newline='') as csvfile:
@@ -80,13 +81,67 @@ with open(output_file, 'w', newline='') as csvfile:
             continue
 
         # Map sacct fields to standardized names
+        # Parse memory fields (MaxRSS can be like "1234567K" or "1234M")
+        max_rss = fields[14] if len(fields) > 14 else ''
+        mem_used_mb = ''
+        if max_rss:
+            # Parse formats like "1234567K", "1234M", "1G"
+            if max_rss.endswith('K'):
+                mem_used_mb = str(int(float(max_rss[:-1]) / 1024))
+            elif max_rss.endswith('M'):
+                mem_used_mb = str(int(float(max_rss[:-1])))
+            elif max_rss.endswith('G'):
+                mem_used_mb = str(int(float(max_rss[:-1]) * 1024))
+            else:
+                mem_used_mb = max_rss  # Assume bytes, convert to MB
+                try:
+                    mem_used_mb = str(int(float(max_rss) / (1024*1024)))
+                except:
+                    mem_used_mb = ''
+
+        # Parse TotalCPU (format: "days-hours:minutes:seconds" or "hours:minutes:seconds")
+        total_cpu = fields[15] if len(fields) > 15 else ''
+        cpu_seconds = ''
+        if total_cpu:
+            try:
+                # Handle format like "1-02:03:04" (1 day, 2 hours, 3 min, 4 sec)
+                if '-' in total_cpu:
+                    days, hms = total_cpu.split('-')
+                    h, m, s = hms.split(':')
+                    cpu_seconds = str(int(days)*86400 + int(h)*3600 + int(m)*60 + float(s))
+                else:
+                    # Format like "02:03:04"
+                    parts = total_cpu.split(':')
+                    if len(parts) == 3:
+                        h, m, s = parts
+                        cpu_seconds = str(int(h)*3600 + int(m)*60 + float(s))
+            except:
+                cpu_seconds = ''
+
+        # Parse Elapsed (same format as TotalCPU)
+        elapsed = fields[16] if len(fields) > 16 else ''
+        walltime_seconds = ''
+        if elapsed:
+            try:
+                if '-' in elapsed:
+                    days, hms = elapsed.split('-')
+                    h, m, s = hms.split(':')
+                    walltime_seconds = str(int(days)*86400 + int(h)*3600 + int(m)*60 + float(s))
+                else:
+                    parts = elapsed.split(':')
+                    if len(parts) == 3:
+                        h, m, s = parts
+                        walltime_seconds = str(int(h)*3600 + int(m)*60 + float(s))
+            except:
+                walltime_seconds = ''
+
         record = {
             'user': fields[0],
             'group': fields[1],
             'account': fields[2],
             'job_id': fields[3],
             'job_name': fields[4] if len(fields) > 4 else '',
-            'cpus': fields[5] if len(fields) > 5 else '1',
+            'cpus_req': fields[5] if len(fields) > 5 else '1',
             'mem_req': fields[6] if len(fields) > 6 else '',
             'nodes': fields[7] if len(fields) > 7 else '1',
             'nodelist': fields[8] if len(fields) > 8 else '',
@@ -94,14 +149,18 @@ with open(output_file, 'w', newline='') as csvfile:
             'start_time': fields[10] if len(fields) > 10 else '',
             'end_time': fields[11] if len(fields) > 11 else '',
             'exit_status': fields[12] if len(fields) > 12 else '',
-            'status': fields[13] if len(fields) > 13 else ''
+            'status': fields[13] if len(fields) > 13 else '',
+            'mem_used': mem_used_mb,
+            'cpu_time_used': cpu_seconds,
+            'walltime_used': walltime_seconds,
+            'cpus_alloc': fields[17] if len(fields) > 17 else ''
         }
 
         # Set defaults for missing values
         if not record['group']:
             record['group'] = 'unknown'
-        if not record['cpus']:
-            record['cpus'] = '1'
+        if not record['cpus_req']:
+            record['cpus_req'] = '1'
         if not record['nodes']:
             record['nodes'] = '1'
 

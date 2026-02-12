@@ -239,7 +239,7 @@ for line in lines:
 
             elif key == 'slots':
                 current_record['slots'] = value
-                current_record['cpus'] = value
+                current_record['cpus_req'] = value
 
             elif key == 'granted_pe':
                 # Parallel environment name (e.g., "mpi", "smp", "openmpi")
@@ -254,7 +254,7 @@ for line in lines:
                     current_record['pe_tasks'] = value
 
             elif key == 'maxvmem':
-                # Maximum virtual memory used
+                # Maximum virtual memory USED (not requested!)
                 mem_str = value
                 # Parse formats: "8.000G", "8192.000M", "8388608.000K"
                 mem_match = re.match(r'([\d.]+)([GMKT])?', mem_str)
@@ -272,7 +272,21 @@ for line in lines:
                     else:  # M
                         mem_mb = int(mem_value)
 
-                    current_record['mem_req'] = str(mem_mb)
+                    current_record['mem_used'] = str(mem_mb)
+
+            elif key == 'cpu':
+                # CPU time used (in seconds)
+                try:
+                    current_record['cpu_time_used'] = str(float(value))
+                except:
+                    pass
+
+            elif key == 'wallclock':
+                # Walltime used (in seconds)
+                try:
+                    current_record['walltime_used'] = str(int(float(value)))
+                except:
+                    pass
 
             elif key == 'ru_maxrss':
                 # Maximum resident set size (if maxvmem not available)
@@ -384,8 +398,9 @@ print(f"Parsed {len(records)} job records from qacct", file=sys.stderr)
 # Write CSV with standardized columns (plus UGE-specific PE fields)
 fieldnames = [
     'user', 'group', 'account', 'job_id', 'job_name', 'queue',
-    'cpus', 'mem_req', 'nodes', 'nodelist', 'submit_time',
-    'start_time', 'end_time', 'exit_status', 'pe_name', 'slots'
+    'cpus_req', 'mem_req', 'nodes', 'nodelist', 'submit_time',
+    'start_time', 'end_time', 'exit_status', 'pe_name', 'slots',
+    'mem_used', 'cpu_time_used', 'walltime_used'
 ]
 
 output_records = []
@@ -394,8 +409,8 @@ for rec in records:
     row = {k: rec.get(k, '') for k in fieldnames}
 
     # Set reasonable defaults
-    if not row['cpus']:
-        row['cpus'] = '1'
+    if not row['cpus_req']:
+        row['cpus_req'] = row.get('slots', '1')  # Use slots if cpus_req not set
     if not row['nodes']:
         row['nodes'] = '1'
     if not row['group']:
