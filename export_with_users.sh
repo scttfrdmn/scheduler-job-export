@@ -3,13 +3,27 @@
 # Export SLURM job data WITH user/group information
 # This matches your existing oscar_all_jobs_2025.csv schema + adds user/group fields
 #
+# Usage: ./export_with_users.sh [START_DATE] [END_DATE]
+#   START_DATE: YYYY-MM-DD (default: 1 year ago)
+#   END_DATE:   YYYY-MM-DD (default: today)
+#
+# Examples:
+#   ./export_with_users.sh                        # Last year
+#   ./export_with_users.sh 2024-01-01 2024-12-31 # Full year 2024
+#   ./export_with_users.sh 2024-10-01 2024-10-31 # October 2024
+#
 
 set -euo pipefail
 
+# Date range configuration (command-line arguments or defaults)
+START_DATE="${1:-$(date -d '1 year ago' '+%Y-%m-%d' 2>/dev/null || date -v-1y '+%Y-%m-%d')}"
+END_DATE="${2:-$(date '+%Y-%m-%d')}"
+
 # Output filename with timestamp
-OUTPUT_FILE="oscar_jobs_with_users_$(date +%Y%m%d).csv"
+OUTPUT_FILE="slurm_jobs_with_users_$(date +%Y%m%d).csv"
 
 echo "Exporting SLURM job data with user/group information..."
+echo "Date range: $START_DATE to $END_DATE"
 echo "Output file: $OUTPUT_FILE"
 echo ""
 
@@ -22,7 +36,8 @@ echo ""
 
 sacct -a \
   --format=User,Account,Group,ReqCPUS,ReqMem,NNodes,NodeList,AllocTRES,ReqGRES,Submit,Start,End \
-  --starttime 2024-01-01 \
+  --starttime "$START_DATE" \
+  --endtime "$END_DATE" \
   --parsable2 \
   > "$OUTPUT_FILE"
 

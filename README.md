@@ -10,23 +10,32 @@ Simple data collection scripts for exporting job history and cluster configurati
 
 ### 1. Export Your Data
 
-Run the export script for your scheduler:
+All scripts accept optional date range arguments. If not provided, defaults to last 1 year.
 
 ```bash
-# SLURM
-./export_with_users.sh
+# SLURM - Format: YYYY-MM-DD
+./export_with_users.sh                        # Last year (default)
+./export_with_users.sh 2024-01-01 2024-12-31 # Specific range
 
-# LSF
+# LSF - Format: YYYY/MM/DD
+./export_lsf_comprehensive.sh                 # Last year (default)
 ./export_lsf_comprehensive.sh 2024/01/01 2024/12/31
 
-# PBS/Torque
+# PBS/Torque - Format: YYYYMMDD
+sudo ./export_pbs_comprehensive.sh            # Last year (default)
 sudo ./export_pbs_comprehensive.sh 20240101 20241231
 
-# UGE/SGE
+# UGE/SGE - Format: MM/DD/YYYY
+./export_uge_comprehensive.sh                 # Last year (default)
 ./export_uge_comprehensive.sh 01/01/2024 12/31/2024
 
 # HTCondor
-./export_htcondor_data.sh
+./export_htcondor_data.sh                     # All available history
+```
+
+**Note:** Each scheduler requires dates in its native format, but all work the same way:
+```bash
+./export_script [START_DATE] [END_DATE]
 ```
 
 ### 2. Export Cluster Configuration
@@ -116,38 +125,97 @@ All scripts produce identical CSV format with these columns:
 
 ## Usage Examples
 
-### SLURM - Last 90 Days
+### SLURM Examples
 
 ```bash
+# Last year (default)
 ./export_with_users.sh
-# Output: slurm_jobs_with_users.csv
+# Output: slurm_jobs_with_users_YYYYMMDD.csv
+
+# Full year 2024
+./export_with_users.sh 2024-01-01 2024-12-31
+
+# Just one month (October)
+./export_with_users.sh 2024-10-01 2024-10-31
+
+# Last 90 days
+./export_with_users.sh $(date -d '90 days ago' '+%Y-%m-%d') $(date '+%Y-%m-%d')
 ```
 
-### LSF - Specific Date Range
+### LSF Examples
 
 ```bash
+# Last year (default)
+./export_lsf_comprehensive.sh
+# Output: lsf_jobs_comprehensive_YYYYMMDD.csv
+
+# Full year 2024
+./export_lsf_comprehensive.sh 2024/01/01 2024/12/31
+
+# Just summer months
 ./export_lsf_comprehensive.sh 2024/06/01 2024/08/31
-# Output: lsf_jobs_comprehensive.csv
 ```
 
-### PBS - Full Year with Cluster Config
+### PBS Examples
 
 ```bash
+# Last year (default)
+sudo ./export_pbs_comprehensive.sh
+# Output: pbs_jobs_with_users_YYYYMMDD.csv
+
+# Full year 2024
+sudo ./export_pbs_comprehensive.sh 20240101 20241231
+
+# With cluster config
 sudo ./export_pbs_comprehensive.sh 20240101 20241231
 ./export_pbs_cluster_config.sh
-# Output: pbs_jobs_comprehensive.csv, pbs_cluster_config.csv
+```
+
+### UGE Examples
+
+```bash
+# Last year (default)
+./export_uge_comprehensive.sh
+# Output: uge_jobs_with_users_YYYYMMDD.csv
+
+# Full year 2024
+./export_uge_comprehensive.sh 01/01/2024 12/31/2024
+
+# Just Q4
+./export_uge_comprehensive.sh 10/01/2024 12/31/2024
 ```
 
 ### Anonymize for Sharing
 
 ```bash
 ./anonymize_cluster_data.sh \
-  slurm_jobs_with_users.csv \
+  slurm_jobs_with_users_20260206.csv \
   jobs_anonymized.csv \
   user_mapping.txt
 
 # Keep mapping.txt private! It's the key to re-identify users.
 ```
+
+---
+
+## Date Format Reference
+
+Each scheduler requires dates in its native format:
+
+| Scheduler | Date Format | Example | Notes |
+|-----------|-------------|---------|-------|
+| **SLURM** | `YYYY-MM-DD` | `2024-01-01` | ISO 8601 standard |
+| **LSF** | `YYYY/MM/DD` | `2024/01/01` | Slashes required |
+| **PBS/Torque** | `YYYYMMDD` | `20240101` | No separators |
+| **UGE/SGE** | `MM/DD/YYYY` | `01/01/2024` | US date format |
+| **HTCondor** | N/A | N/A | Uses all history |
+
+**All scripts follow the same pattern:**
+```bash
+./export_script [START_DATE] [END_DATE]
+```
+
+Omit both arguments to use the default (last 1 year).
 
 ---
 
@@ -239,20 +307,22 @@ This will:
 
 ## Output File Locations
 
-By default, scripts create files in the current directory:
+By default, scripts create timestamped files in the current directory:
 
 ```
-slurm_jobs_with_users.csv          # SLURM job export
-slurm_cluster_config.csv            # SLURM cluster config
-lsf_jobs_comprehensive.csv          # LSF job export
-lsf_cluster_config.csv              # LSF cluster config
-pbs_jobs_comprehensive.csv          # PBS job export
-pbs_cluster_config.csv              # PBS cluster config
-uge_jobs_comprehensive.csv          # UGE job export
-uge_cluster_config.csv              # UGE cluster config
-htcondor_jobs.csv                   # HTCondor job export
-htcondor_cluster_config.csv         # HTCondor cluster config
+slurm_jobs_with_users_YYYYMMDD.csv       # SLURM job export
+slurm_cluster_config.csv                 # SLURM cluster config
+lsf_jobs_comprehensive_YYYYMMDD.csv      # LSF job export
+lsf_cluster_config.csv                   # LSF cluster config
+pbs_jobs_with_users_YYYYMMDD.csv         # PBS job export
+pbs_cluster_config.csv                   # PBS cluster config
+uge_jobs_with_users_YYYYMMDD.csv         # UGE job export
+uge_cluster_config.csv                   # UGE cluster config
+htcondor_jobs.csv                        # HTCondor job export
+htcondor_cluster_config.csv              # HTCondor cluster config
 ```
+
+Where `YYYYMMDD` is the date the export was run (e.g., `20260206`).
 
 ---
 
