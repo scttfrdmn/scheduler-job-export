@@ -662,6 +662,48 @@ These scripts simply export raw data in a standardized format. You can then anal
 
 ---
 
+## Testing and Linting
+
+Test harness and Python linting are available to ensure code quality.
+
+### Run All Checks
+
+```bash
+./run_checks.sh
+```
+
+This runs both the test harness and Python linting (if ruff is installed).
+
+### Test Harness Only
+
+```bash
+./test_exports.sh
+```
+
+Tests validate:
+- Python and Bash versions
+- Script executability
+- Python syntax in embedded code
+- Standard library availability
+- Anonymization functionality
+- Documentation completeness
+
+### Python Linting
+
+```bash
+# Install ruff (optional but recommended)
+pip install ruff
+
+# Run linter
+./lint_python.sh
+```
+
+Extracts and lints all embedded Python code from bash scripts using ruff.
+
+**See [TESTING.md](TESTING.md) for complete testing documentation.**
+
+---
+
 ## Contributing
 
 Improvements welcome! Common enhancements:
@@ -669,5 +711,10 @@ Improvements welcome! Common enhancements:
 - Better error handling
 - Performance optimizations
 - Additional output formats (JSON, Parquet, etc.)
+
+**Before contributing:**
+1. Run `./run_checks.sh` to ensure tests pass
+2. Test with real scheduler data when possible
+3. Update documentation as needed
 
 ---

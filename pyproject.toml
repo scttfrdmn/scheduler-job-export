@@ -1,0 +1,46 @@
+[project]
+name = "scheduler-data-export"
+version = "1.0.0"
+description = "HPC scheduler data export scripts"
+requires-python = ">=3.6"
+
+[tool.ruff]
+# Enable linting for Python 3.6+
+target-version = "py36"
+line-length = 100
+
+# Select rule sets
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "N",   # pep8-naming
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+]
+
+# Ignore specific rules
+ignore = [
+    "E501",  # line too long (handled by formatter)
+    "B008",  # function call in argument defaults
+    "N802",  # function name should be lowercase (some embedded scripts use different style)
+    "N806",  # variable in function should be lowercase
+]
+
+# Exclude patterns
+exclude = [
+    ".git",
+    "__pycache__",
+    "*.pyc",
+    ".venv",
+    "venv",
+]
+
+[tool.ruff.per-file-ignores]
+# Allow unused imports in __init__.py
+"__init__.py" = ["F401"]
+
+[tool.ruff.isort]
+known-first-party = ["scheduler_export"]
