@@ -63,12 +63,56 @@ if [ -n "$SGE_ROOT" ]; then
     fi
 fi
 
+TEMP_FILE=$(mktemp)
+PE_CONFIG_FILE=$(mktemp)
+trap 'rm -f "$TEMP_FILE" "$PE_CONFIG_FILE"' EXIT
+
+# Query PE configurations for better node count estimation
+if command -v qconf &> /dev/null; then
+    echo "Querying parallel environment configurations..."
+    # Get list of all PEs
+    PE_LIST=$(qconf -spl 2>/dev/null || echo "")
+
+    if [ -n "$PE_LIST" ]; then
+        # For each PE, get its allocation rule
+        echo "pe_name,allocation_rule,slots_per_host" > "$PE_CONFIG_FILE"
+
+        for pe in $PE_LIST; do
+            PE_DETAILS=$(qconf -sp "$pe" 2>/dev/null || echo "")
+            if [ -n "$PE_DETAILS" ]; then
+                # Extract allocation_rule
+                ALLOC_RULE=$(echo "$PE_DETAILS" | grep "^allocation_rule" | awk '{print $2}')
+
+                # Determine slots per host from allocation rule
+                if [[ "$ALLOC_RULE" =~ ^[0-9]+$ ]]; then
+                    # Fixed number = slots per host
+                    SLOTS_PER_HOST="$ALLOC_RULE"
+                elif [[ "$ALLOC_RULE" == "\$pe_slots" ]]; then
+                    # All on one host (SMP)
+                    SLOTS_PER_HOST="SMP"
+                elif [[ "$ALLOC_RULE" == "\$fill_up" ]]; then
+                    SLOTS_PER_HOST="fill_up"
+                elif [[ "$ALLOC_RULE" == "\$round_robin" ]]; then
+                    SLOTS_PER_HOST="round_robin"
+                else
+                    SLOTS_PER_HOST="unknown"
+                fi
+
+                echo "$pe,$ALLOC_RULE,$SLOTS_PER_HOST" >> "$PE_CONFIG_FILE"
+            fi
+        done
+
+        NUM_PES=$(tail -n +2 "$PE_CONFIG_FILE" | wc -l | tr -d ' ')
+        echo "Found $NUM_PES parallel environments"
+    else
+        echo "No parallel environments configured or access denied"
+    fi
+    echo ""
+fi
+
 echo "Querying accounting database with qacct..."
 echo "This may take several minutes for large date ranges..."
 echo ""
-
-TEMP_FILE=$(mktemp)
-trap 'rm -f "$TEMP_FILE"' EXIT
 
 # Run qacct
 # -b begin_time (MM/DD/YYYY format)
@@ -97,7 +141,25 @@ import csv
 import re
 from datetime import datetime
 
-with open(sys.argv[1], 'r') as f:
+temp_file = sys.argv[1]
+pe_config_file = sys.argv[2]
+output_file = sys.argv[3]
+
+# Read PE configurations
+pe_configs = {}
+try:
+    with open(pe_config_file, 'r') as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            pe_configs[row['pe_name']] = {
+                'allocation_rule': row['allocation_rule'],
+                'slots_per_host': row['slots_per_host']
+            }
+    print(f"Loaded {len(pe_configs)} PE configurations", file=sys.stderr)
+except:
+    print("No PE configurations available", file=sys.stderr)
+
+with open(temp_file, 'r') as f:
     lines = f.readlines()
 
 # qacct output format:
@@ -275,23 +337,44 @@ if current_record and 'job_number' in current_record:
 
 # Post-process records to calculate node counts for PE jobs
 for rec in records:
-    # Calculate nodes based on PE and slots
+    # Calculate nodes based on PE configuration and slots
     if 'nodes' not in rec or not rec['nodes']:
         if rec.get('is_parallel'):
-            # Parallel environment job - may use multiple nodes
-            # We can't know exact node count from qacct alone, but we can estimate
+            # Parallel environment job - use PE config if available
             slots = int(rec.get('slots', 1))
+            pe_name = rec.get('pe_name', '')
 
-            # Conservative estimate: assume typical node has 16-48 cores
-            # If slots > 48, likely multi-node
-            if slots >= 48:
-                # Estimate nodes (assuming 24 cores/node average)
-                estimated_nodes = max(1, (slots + 23) // 24)
-                rec['nodes'] = str(estimated_nodes)
+            if pe_name in pe_configs:
+                # Use PE configuration
+                pe_config = pe_configs[pe_name]
+                slots_per_host = pe_config['slots_per_host']
+
+                if slots_per_host == 'SMP':
+                    # All slots on one host
+                    rec['nodes'] = '1'
+                elif slots_per_host.isdigit():
+                    # Fixed slots per host
+                    nodes = max(1, (slots + int(slots_per_host) - 1) // int(slots_per_host))
+                    rec['nodes'] = str(nodes)
+                elif slots_per_host in ['fill_up', 'round_robin']:
+                    # Can't determine node count without runtime info
+                    # Use heuristic: if slots > 48, likely multi-node
+                    if slots >= 48:
+                        rec['nodes'] = str(max(1, (slots + 23) // 24))
+                    else:
+                        rec['nodes'] = '1'
+                else:
+                    # Unknown allocation rule
+                    rec['nodes'] = '1'
             else:
-                # Could be single or multi-node, can't determine from qacct
-                # Use 1 as minimum but note it may be inaccurate
-                rec['nodes'] = '1'
+                # No PE config available - use heuristic
+                if slots >= 48:
+                    # Estimate nodes (assuming 24 cores/node average)
+                    estimated_nodes = max(1, (slots + 23) // 24)
+                    rec['nodes'] = str(estimated_nodes)
+                else:
+                    # Could be single or multi-node, can't determine
+                    rec['nodes'] = '1'
         else:
             # Non-PE job, definitely single node
             rec['nodes'] = '1'
@@ -320,12 +403,12 @@ for rec in records:
 
     output_records.append(row)
 
-with open(sys.argv[2], 'w', newline='') as csvfile:
+with open(output_file, 'w', newline='') as csvfile:
     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
     writer.writeheader()
     writer.writerows(output_records)
 
-print(f"Wrote {len(output_records)} records to {sys.argv[2]}", file=sys.stderr)
+print(f"Wrote {len(output_records)} records to {output_file}", file=sys.stderr)
 
 # Print statistics
 print("\n" + "="*80, file=sys.stderr)
@@ -356,7 +439,7 @@ if dates_with_jobs:
 print(file=sys.stderr)
 PYTHON_EOF
 
-python3 - "$TEMP_FILE" "$OUTPUT_FILE"
+python3 - "$TEMP_FILE" "$PE_CONFIG_FILE" "$OUTPUT_FILE"
 
 echo ""
 echo "================================================================"
