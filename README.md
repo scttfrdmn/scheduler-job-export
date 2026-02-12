@@ -1,6 +1,6 @@
 # HPC Cluster Data Export Tools
 
-Simple data collection scripts for exporting job history and cluster configuration from HPC schedulers.
+Production-ready scripts for collecting **job history** and **cluster configuration** from HPC schedulers.
 
 **Supported Schedulers:** SLURM, IBM Spectrum LSF, PBS/Torque, UGE/SGE, HTCondor
 
@@ -8,7 +8,11 @@ Simple data collection scripts for exporting job history and cluster configurati
 
 ## Quick Start
 
-### 1. Export Your Data
+**Complete data collection requires TWO exports:**
+1. **Job data** (historical job submissions with dates)
+2. **Cluster configuration** (current node/partition setup)
+
+### 1. Export Job Data
 
 All scripts accept optional date range arguments. If not provided, defaults to last 1 year.
 
@@ -38,7 +42,9 @@ sudo ./export_pbs_comprehensive.sh 20240101 20241231
 ./export_script [START_DATE] [END_DATE]
 ```
 
-### 2. Export Cluster Configuration
+### 2. Export Cluster Configuration (Required)
+
+**This is a separate required step** - cluster config is not included in job data export.
 
 ```bash
 # SLURM
@@ -53,6 +59,8 @@ sudo ./export_pbs_comprehensive.sh 20240101 20241231
 # UGE
 ./export_uge_cluster_config.sh
 ```
+
+**Output:** CSV with node hostnames, CPU counts, memory, partitions, and current state.
 
 ### 3. Anonymize (Optional)
 
@@ -144,9 +152,13 @@ All scripts produce standardized CSV format with these core columns:
 ### SLURM Examples
 
 ```bash
-# Last year (default)
+# Export job data (last year by default)
 ./export_with_users.sh
 # Output: slurm_jobs_with_users_YYYYMMDD.csv
+
+# Export cluster configuration (REQUIRED)
+./export_slurm_cluster_config.sh
+# Output: slurm_cluster_config.csv
 
 # Full year 2024
 ./export_with_users.sh 2024-01-01 2024-12-31
@@ -161,9 +173,13 @@ All scripts produce standardized CSV format with these core columns:
 ### LSF Examples
 
 ```bash
-# Last year (default)
+# Export job data (last year by default)
 ./export_lsf_comprehensive.sh
 # Output: lsf_jobs_comprehensive_YYYYMMDD.csv
+
+# Export cluster configuration (REQUIRED)
+./export_lsf_cluster_config.sh
+# Output: lsf_cluster_config.csv
 
 # Full year 2024
 ./export_lsf_comprehensive.sh 2024/01/01 2024/12/31
@@ -175,24 +191,28 @@ All scripts produce standardized CSV format with these core columns:
 ### PBS Examples
 
 ```bash
-# Last year (default)
+# Export job data (last year by default, usually needs sudo)
 sudo ./export_pbs_comprehensive.sh
 # Output: pbs_jobs_with_users_YYYYMMDD.csv
 
+# Export cluster configuration (REQUIRED)
+./export_pbs_cluster_config.sh
+# Output: pbs_cluster_config.csv
+
 # Full year 2024
 sudo ./export_pbs_comprehensive.sh 20240101 20241231
-
-# With cluster config
-sudo ./export_pbs_comprehensive.sh 20240101 20241231
-./export_pbs_cluster_config.sh
 ```
 
 ### UGE Examples
 
 ```bash
-# Last year (default)
+# Export job data (last year by default)
 ./export_uge_comprehensive.sh
 # Output: uge_jobs_with_users_YYYYMMDD.csv
+
+# Export cluster configuration (REQUIRED)
+./export_uge_cluster_config.sh
+# Output: uge_cluster_config.csv
 
 # Full year 2024
 ./export_uge_comprehensive.sh 01/01/2024 12/31/2024
@@ -495,20 +515,24 @@ This normalizes all scheduler-specific formats to a common structure.
 
 ## Example Workflow
 
+**Complete workflow showing BOTH required exports:**
+
 ```bash
-# 1. Export data from your scheduler
+# 1. Export job data (historical submissions)
 ./export_with_users.sh
+# Output: slurm_jobs_with_users_20260212.csv
 
-# 2. Export cluster configuration
+# 2. Export cluster configuration (REQUIRED - separate step)
 ./export_slurm_cluster_config.sh
+# Output: slurm_cluster_config.csv
 
-# 3. Anonymize for sharing
+# 3. Anonymize job data for sharing
 ./anonymize_cluster_data.sh \
-  slurm_jobs_with_users.csv \
+  slurm_jobs_with_users_20260212.csv \
   jobs_anonymized.csv \
   mapping.txt
 
-# 4. Share the anonymized data
+# 4. Share BOTH files (job data + cluster config)
 # Keep mapping.txt private!
 scp jobs_anonymized.csv remote:~/data/
 scp slurm_cluster_config.csv remote:~/data/
@@ -517,6 +541,10 @@ scp slurm_cluster_config.csv remote:~/data/
 gpg --encrypt --recipient you@example.com mapping.txt
 rm mapping.txt  # Remove unencrypted version
 ```
+
+**Why both files?**
+- **Job data:** Workload patterns, user behavior, queue times
+- **Cluster config:** Capacity, node types, partitions for context
 
 ---
 
