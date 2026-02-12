@@ -57,11 +57,12 @@ Arguments:
 Expected CSV columns (in any order):
   - user, uid, account, or username (user identification)
   - group, gid, or groupname (group identification)
-  - Plus any other job data columns
+  - hostname, nodename, host, or node (hostname identification)
+  - Plus any other job or cluster data columns
 
 The script will:
-  1. Identify user and group columns automatically
-  2. Create consistent anonymous IDs (user_001, user_002, group_A, group_B, etc.)
+  1. Identify user, group, and hostname columns automatically
+  2. Create consistent anonymous IDs (user_0001, group_A, node_0001, etc.)
   3. Preserve all relationships and other data
   4. Save mapping to secure file (restrict access!)
   5. Output anonymized CSV for sharing
@@ -108,9 +109,10 @@ log_info "Mapping file: $MAPPING_FILE"
 HEADER=$(head -n 1 "$INPUT_CSV")
 log_info "Detected columns: $HEADER"
 
-# Detect user and group columns
+# Detect user, group, and hostname columns
 USER_COL=""
 GROUP_COL=""
+HOSTNAME_COL=""
 ACCOUNT_COL=""
 COL_NUM=1
 
@@ -137,6 +139,13 @@ for col in "${COLS[@]}"; do
         log_info "Found group column: '$GROUP_COL' (position $GROUP_COL_NUM)"
     fi
 
+    # Detect hostname column
+    if [[ "$col_lower" =~ ^(hostname|nodename|nodelist|host|node)$ ]]; then
+        HOSTNAME_COL="$col"
+        HOSTNAME_COL_NUM=$COL_NUM
+        log_info "Found hostname column: '$HOSTNAME_COL' (position $HOSTNAME_COL_NUM)"
+    fi
+
     ((COL_NUM++))
 done
 
@@ -148,15 +157,15 @@ if [ -z "$USER_COL" ] && [ -n "$ACCOUNT_COL" ]; then
 fi
 
 # Validate columns found
-if [ -z "$USER_COL" ] && [ -z "$GROUP_COL" ]; then
-    log_error "No user or group columns detected in CSV"
-    log_error "Expected columns like: user, uid, username, account, group, gid, groupname"
+if [ -z "$USER_COL" ] && [ -z "$GROUP_COL" ] && [ -z "$HOSTNAME_COL" ]; then
+    log_error "No user, group, or hostname columns detected in CSV"
+    log_error "Expected columns like: user, uid, username, account, group, gid, groupname, hostname, nodename"
     log_error "Found: $HEADER"
     exit 1
 fi
 
-# Extract unique users and groups
-log_info "Extracting unique users and groups..."
+# Extract unique users, groups, and hostnames
+log_info "Extracting unique users, groups, and hostnames..."
 
 if [ -n "$USER_COL" ]; then
     tail -n +2 "$INPUT_CSV" | cut -d',' -f"$USER_COL_NUM" | sort -u > "$TEMP_DIR/users.txt"
@@ -168,6 +177,12 @@ if [ -n "$GROUP_COL" ]; then
     tail -n +2 "$INPUT_CSV" | cut -d',' -f"$GROUP_COL_NUM" | sort -u > "$TEMP_DIR/groups.txt"
     NUM_GROUPS=$(wc -l < "$TEMP_DIR/groups.txt")
     log_info "Found $NUM_GROUPS unique groups"
+fi
+
+if [ -n "$HOSTNAME_COL" ]; then
+    tail -n +2 "$INPUT_CSV" | cut -d',' -f"$HOSTNAME_COL_NUM" | sort -u > "$TEMP_DIR/hostnames.txt"
+    NUM_HOSTNAMES=$(wc -l < "$TEMP_DIR/hostnames.txt")
+    log_info "Found $NUM_HOSTNAMES unique hostnames"
 fi
 
 # Generate mapping files
@@ -234,13 +249,15 @@ import csv
 import hashlib
 import os
 
-def anonymize_csv(input_file, output_file, mapping_file, user_col_idx, group_col_idx):
+def anonymize_csv(input_file, output_file, mapping_file, user_col_idx, group_col_idx, hostname_col_idx):
     """Anonymize CSV data with consistent mappings"""
 
     user_map = {}
     group_map = {}
+    hostname_map = {}
     user_counter = 1
     group_counter = 1
+    hostname_counter = 1
 
     # Read and anonymize
     with open(input_file, 'r') as infile, open(output_file, 'w', newline='') as outfile:
@@ -279,6 +296,15 @@ def anonymize_csv(input_file, output_file, mapping_file, user_col_idx, group_col
                 if group:
                     row[group_col_idx] = group_map[group]
 
+            # Anonymize hostname
+            if hostname_col_idx is not None and hostname_col_idx < len(row):
+                hostname = row[hostname_col_idx]
+                if hostname and hostname not in hostname_map:
+                    hostname_map[hostname] = f"node_{hostname_counter:04d}"
+                    hostname_counter += 1
+                if hostname:
+                    row[hostname_col_idx] = hostname_map[hostname]
+
             writer.writerow(row)
 
     # Write mapping file
@@ -303,12 +329,20 @@ def anonymize_csv(input_file, output_file, mapping_file, user_col_idx, group_col
                 mapfile.write(f"{anon:15s} -> {real}\n")
             mapfile.write("\n")
 
+        if hostname_map:
+            mapfile.write("HOSTNAME MAPPINGS:\n")
+            mapfile.write("-" * 80 + "\n")
+            for real, anon in sorted(hostname_map.items(), key=lambda x: x[1]):
+                mapfile.write(f"{anon:15s} -> {real}\n")
+            mapfile.write("\n")
+
         mapfile.write("=" * 80 + "\n")
         mapfile.write(f"Total users anonymized: {len(user_map)}\n")
         mapfile.write(f"Total groups anonymized: {len(group_map)}\n")
+        mapfile.write(f"Total hostnames anonymized: {len(hostname_map)}\n")
         mapfile.write("=" * 80 + "\n")
 
-    return len(user_map), len(group_map)
+    return len(user_map), len(group_map), len(hostname_map)
 
 if __name__ == "__main__":
     input_csv = sys.argv[1]
@@ -316,14 +350,17 @@ if __name__ == "__main__":
     mapping_file = sys.argv[3]
     user_col = int(sys.argv[4]) if sys.argv[4] != "None" else None
     group_col = int(sys.argv[5]) if sys.argv[5] != "None" else None
+    hostname_col = int(sys.argv[6]) if sys.argv[6] != "None" else None
 
     if user_col is not None:
         user_col -= 1  # Convert to 0-indexed
     if group_col is not None:
         group_col -= 1  # Convert to 0-indexed
+    if hostname_col is not None:
+        hostname_col -= 1  # Convert to 0-indexed
 
-    users, groups = anonymize_csv(input_csv, output_csv, mapping_file, user_col, group_col)
-    print(f"Anonymized {users} users and {groups} groups")
+    users, groups, hostnames = anonymize_csv(input_csv, output_csv, mapping_file, user_col, group_col, hostname_col)
+    print(f"Anonymized {users} users, {groups} groups, and {hostnames} hostnames")
 
 PYTHON_EOF
 
@@ -334,8 +371,9 @@ log_info "Processing CSV file..."
 
 USER_ARG="${USER_COL_NUM:-None}"
 GROUP_ARG="${GROUP_COL_NUM:-None}"
+HOSTNAME_ARG="${HOSTNAME_COL_NUM:-None}"
 
-python3 "$TEMP_DIR/anonymize.py" "$INPUT_CSV" "$OUTPUT_CSV" "$MAPPING_FILE" "$USER_ARG" "$GROUP_ARG"
+python3 "$TEMP_DIR/anonymize.py" "$INPUT_CSV" "$OUTPUT_CSV" "$MAPPING_FILE" "$USER_ARG" "$GROUP_ARG" "$HOSTNAME_ARG"
 
 # Set secure permissions on mapping file
 chmod 600 "$MAPPING_FILE"
