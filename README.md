@@ -501,10 +501,14 @@ sudo cp -r /var/spool/pbs/server_priv/accounting/ ~/pbs_logs/
 
 **Parallel Environment (PE) Job Handling:**
 UGE uses PEs (like `mpi`, `smp`, `openmpi`) for multi-core and multi-node jobs. The export script:
+- **Queries PE configurations** using `qconf -sp` to get allocation rules
 - Captures PE name in `pe_name` column
 - Captures total slots in `slots` column
-- Estimates node count for PE jobs with ≥48 slots (assumes ~24 cores/node)
-- For smaller PE jobs, node count may be inaccurate (defaults to 1)
+- **Calculates accurate node counts** based on PE allocation_rule:
+  - **Fixed allocation** (e.g., `4`): nodes = ceil(slots / 4)
+  - **SMP** (`$pe_slots`): nodes = 1 (all slots on one host)
+  - **Dynamic** (`$fill_up`, `$round_robin`): heuristic-based estimate
+- Falls back to heuristics if qconf unavailable
 
 **Tips:**
 ```bash
@@ -513,6 +517,12 @@ qacct -j 12345  # Query a known job
 
 # Check available date range
 qacct -b 01/01/2020 -e 01/02/2020
+
+# List all parallel environments
+qconf -spl
+
+# View PE configuration (shows allocation_rule)
+qconf -sp mpi
 
 # View PE job details
 qacct -j <job_id> | grep -E "(granted_pe|slots|hostname)"
