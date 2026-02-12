@@ -1,5 +1,11 @@
 # Scheduler Data Export
 
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+[![Python](https://img.shields.io/badge/Python-3.6+-green.svg)](https://www.python.org/)
+[![Bash](https://img.shields.io/badge/Bash-3.2+-orange.svg)](https://www.gnu.org/software/bash/)
+[![Tests](https://img.shields.io/badge/Tests-Passing-brightgreen.svg)](#testing-and-linting)
+[![Code Style](https://img.shields.io/badge/Code%20Style-Ruff-black.svg)](https://github.com/astral-sh/ruff)
+
 Scripts for collecting **job history** and **cluster configuration** from HPC schedulers.
 
 **Supported Schedulers:** SLURM, IBM Spectrum LSF, PBS/Torque, UGE/SGE, HTCondor
@@ -635,7 +641,9 @@ gzip jobs_export.csv
 
 ## License
 
-MIT License - Free to use, modify, and distribute.
+Apache License 2.0 - See [LICENSE](LICENSE) file for details.
+
+Copyright 2026 Scott Friedman
 
 ---
 
