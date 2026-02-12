@@ -7,6 +7,11 @@
 #
 # Supports: Univa Grid Engine (UGE), Sun Grid Engine (SGE), Open Grid Engine (OGE)
 #
+# NOTE: Parallel Environment (PE) job handling:
+#  - PE name captured in 'pe_name' field (e.g., "mpi", "smp", "openmpi")
+#  - Node count estimated for large PE jobs (slots >= 48 cores)
+#  - qacct limitation: only shows one hostname for multi-node PE jobs
+#
 
 set -euo pipefail
 
@@ -142,7 +147,7 @@ for line in lines:
 
             elif key == 'hostname':
                 current_record['nodelist'] = value
-                current_record['nodes'] = '1'  # UGE jobs typically single node
+                # Don't set nodes count here - will calculate after parsing all fields
 
             elif key == 'group':
                 current_record['group'] = value
@@ -171,7 +176,15 @@ for line in lines:
                     current_record['job_id'] = f"{current_record['job_id']}.{task_id}"
 
             elif key == 'slots':
+                current_record['slots'] = value
                 current_record['cpus'] = value
+
+            elif key == 'granted_pe':
+                # Parallel environment name (e.g., "mpi", "smp", "openmpi")
+                # If this is set, the job used a PE and may span multiple nodes
+                if value != 'NONE' and value != 'undefined':
+                    current_record['pe_name'] = value
+                    current_record['is_parallel'] = True
 
             elif key == 'pe_taskid':
                 # Parallel environment task ID
@@ -260,13 +273,36 @@ for line in lines:
 if current_record and 'job_number' in current_record:
     records.append(current_record)
 
+# Post-process records to calculate node counts for PE jobs
+for rec in records:
+    # Calculate nodes based on PE and slots
+    if 'nodes' not in rec or not rec['nodes']:
+        if rec.get('is_parallel'):
+            # Parallel environment job - may use multiple nodes
+            # We can't know exact node count from qacct alone, but we can estimate
+            slots = int(rec.get('slots', 1))
+
+            # Conservative estimate: assume typical node has 16-48 cores
+            # If slots > 48, likely multi-node
+            if slots >= 48:
+                # Estimate nodes (assuming 24 cores/node average)
+                estimated_nodes = max(1, (slots + 23) // 24)
+                rec['nodes'] = str(estimated_nodes)
+            else:
+                # Could be single or multi-node, can't determine from qacct
+                # Use 1 as minimum but note it may be inaccurate
+                rec['nodes'] = '1'
+        else:
+            # Non-PE job, definitely single node
+            rec['nodes'] = '1'
+
 print(f"Parsed {len(records)} job records from qacct", file=sys.stderr)
 
-# Write CSV with standardized columns
+# Write CSV with standardized columns (plus UGE-specific PE fields)
 fieldnames = [
     'user', 'group', 'account', 'job_id', 'job_name', 'queue',
     'cpus', 'mem_req', 'nodes', 'nodelist', 'submit_time',
-    'start_time', 'end_time', 'exit_status'
+    'start_time', 'end_time', 'exit_status', 'pe_name', 'slots'
 ]
 
 output_records = []
@@ -299,11 +335,16 @@ print("="*80, file=sys.stderr)
 unique_users = len(set(r['user'] for r in output_records if r['user']))
 unique_groups = len(set(r['group'] for r in output_records if r['group']))
 unique_queues = len(set(r['queue'] for r in output_records if r['queue']))
+pe_jobs = len([r for r in output_records if r.get('pe_name')])
+unique_pes = len(set(r.get('pe_name', '') for r in output_records if r.get('pe_name')))
 
 print(f"\nJobs exported: {len(output_records):,}", file=sys.stderr)
 print(f"Unique users: {unique_users:,}", file=sys.stderr)
 print(f"Unique groups: {unique_groups:,}", file=sys.stderr)
 print(f"Unique queues: {unique_queues:,}", file=sys.stderr)
+if pe_jobs > 0:
+    print(f"PE jobs: {pe_jobs:,} ({pe_jobs*100//len(output_records)}%)", file=sys.stderr)
+    print(f"Unique PEs: {unique_pes:,}", file=sys.stderr)
 
 # Date range
 dates_with_jobs = [r['submit_time'] for r in output_records if r['submit_time']]
