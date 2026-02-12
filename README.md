@@ -64,21 +64,27 @@ sudo ./export_pbs_comprehensive.sh 20240101 20241231
 
 ## What Gets Exported
 
-All scripts produce identical CSV format with these columns:
+All scripts produce standardized CSV format with these core columns:
 
 | Column | Description |
 |--------|-------------|
-| `user` | Username (or anonymized) |
+| `user` | Username (lowercase, ready for anonymization) |
 | `group` | User's group |
-| `account` | Accounting string (if available) |
+| `account` | Accounting/project identifier |
 | `job_id` | Unique job identifier |
+| `job_name` | Job name (if available) |
 | `cpus` | Number of CPUs requested |
 | `mem_req` | Memory requested (MB) |
 | `nodes` | Number of nodes allocated |
+| `nodelist` | List of nodes where job ran |
 | `submit_time` | When job was submitted |
 | `start_time` | When job started running |
 | `end_time` | When job completed |
 | `exit_status` | Job exit code |
+
+**Scheduler-specific columns:**
+- **LSF/PBS/UGE:** Include `queue` column
+- **LSF/SLURM:** Include `status` column (job state)
 
 **Cluster Config CSV:**
 
@@ -221,27 +227,29 @@ Omit both arguments to use the default (last 1 year).
 
 ## Anonymization
 
-The anonymization script creates deterministic mappings:
+The anonymization script creates deterministic mappings and works with all export formats:
 
 **Before:**
 ```csv
-user,group,job_id,cpus
-jsmith,research,12345,16
-ajones,physics,12346,32
+user,group,account,job_id,cpus
+jsmith,research,proj_alpha,12345,16
+ajones,physics,proj_beta,12346,32
 ```
 
 **After:**
 ```csv
-user,group,job_id,cpus
-user_0001,group_A,12345,16
-user_0002,group_B,12346,32
+user,group,account,job_id,cpus
+user_0001,group_A,proj_alpha,12345,16
+user_0002,group_B,proj_beta,12346,32
 ```
 
 **Features:**
-- Deterministic: Same user always gets same ID
-- Preserves patterns: Behavioral analysis still valid
-- Secure: Original identities not recoverable without mapping file
-- Auto-detects columns: Handles any CSV with user/group data
+- **Compatible:** Works with SLURM, LSF, PBS, UGE, HTCondor exports
+- **Deterministic:** Same user always gets same ID
+- **Smart detection:** Automatically finds user/group columns
+- **Preserves patterns:** Behavioral analysis still valid
+- **Secure:** Original identities not recoverable without mapping file
+- **Account preserved:** Project/billing identifiers kept intact
 
 **Important:** Keep `mapping.txt` secure and private. It contains the key to re-identify users.
 
