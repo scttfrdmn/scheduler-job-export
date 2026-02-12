@@ -224,12 +224,19 @@ sudo ./export_pbs_comprehensive.sh 20240101 20241231
 ### Anonymize for Sharing
 
 ```bash
+# Anonymize job data (users, groups, nodelist)
 ./anonymize_cluster_data.sh \
-  slurm_jobs_with_users_20260206.csv \
+  slurm_jobs_with_users_20260212.csv \
   jobs_anonymized.csv \
-  user_mapping.txt
+  mapping.txt
 
-# Keep mapping.txt private! It's the key to re-identify users.
+# Anonymize cluster config (hostnames)
+./anonymize_cluster_data.sh \
+  slurm_cluster_config.csv \
+  cluster_anonymized.csv \
+  mapping.txt
+
+# Keep mapping.txt private! It contains user AND hostname mappings.
 ```
 
 ---
@@ -257,31 +264,51 @@ Omit both arguments to use the default (last 1 year).
 
 ## Anonymization
 
-The anonymization script creates deterministic mappings and works with all export formats:
+The anonymization script creates deterministic mappings and works with **both job data and cluster config** files:
 
-**Before:**
+**Job Data - Before:**
 ```csv
-user,group,account,job_id,cpus
-jsmith,research,proj_alpha,12345,16
-ajones,physics,proj_beta,12346,32
+user,group,account,job_id,nodelist,cpus
+jsmith,research,proj_alpha,12345,node-gpu-01.hpc.edu,16
+ajones,physics,proj_beta,12346,compute-a001.org,32
 ```
 
-**After:**
+**Job Data - After:**
 ```csv
-user,group,account,job_id,cpus
-user_0001,group_A,proj_alpha,12345,16
-user_0002,group_B,proj_beta,12346,32
+user,group,account,job_id,nodelist,cpus
+user_0001,group_A,proj_alpha,12345,node_0001,16
+user_0002,group_B,proj_beta,12346,node_0002,32
+```
+
+**Cluster Config - Before:**
+```csv
+hostname,cpus,memory_mb,gpus
+node-gpu-01.hpc.university.edu,64,256000,2
+compute-a001.cluster.org,48,192000,0
+```
+
+**Cluster Config - After:**
+```csv
+hostname,cpus,memory_mb,gpus
+node_0001,64,256000,2
+node_0002,48,192000,0
 ```
 
 **Features:**
-- **Compatible:** Works with SLURM, LSF, PBS, UGE, HTCondor exports
-- **Deterministic:** Same user always gets same ID
-- **Smart detection:** Automatically finds user/group columns
+- **Three-way anonymization:** Users, groups, AND hostnames
+- **Compatible:** Works with job data and cluster config exports from all schedulers
+- **Deterministic:** Same user/hostname always gets same ID
+- **Smart detection:** Automatically finds user/group/hostname columns
 - **Preserves patterns:** Behavioral analysis still valid
 - **Secure:** Original identities not recoverable without mapping file
 - **Account preserved:** Project/billing identifiers kept intact
 
-**Important:** Keep `mapping.txt` secure and private. It contains the key to re-identify users.
+**What gets anonymized:**
+- `user`, `username`, `uid` → `user_0001`, `user_0002`, ...
+- `group`, `groupname`, `gid` → `group_A`, `group_B`, ...
+- `hostname`, `nodename`, `nodelist` → `node_0001`, `node_0002`, ...
+
+**Important:** Keep `mapping.txt` secure and private. It contains the key to re-identify users and hostnames.
 
 ---
 
