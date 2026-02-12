@@ -651,16 +651,22 @@ See [SECURITY.md](SECURITY.md) for comprehensive security documentation.
 
 ## Contributing
 
-Improvements welcome! Areas for enhancement:
+Contributions are welcome! See [open issues](https://github.com/scttfrdmn/scheduler-job-export/issues) for enhancement opportunities.
+
+**Areas for enhancement:**
 - Additional scheduler support
 - Better error handling
 - Performance optimizations
 - Additional output formats (JSON, Parquet)
 
 **Before contributing:**
-1. Run `./run_checks.sh` to ensure tests pass
-2. Test with real scheduler data when possible
-3. Update documentation as needed
+1. Check [existing issues](https://github.com/scttfrdmn/scheduler-job-export/issues) or create a new one
+2. Run `./run_checks.sh` to ensure tests pass
+3. Test with real scheduler data when possible
+4. Update documentation as needed
+5. Reference issue numbers in commits: `Fix #123: description`
+
+See [PROJECT_MANAGEMENT.md](PROJECT_MANAGEMENT.md) for workflow details, labels, and milestones.
 
 ---
 
@@ -689,5 +695,19 @@ Export raw data, then analyze with your preferred tools (Python, R, Excel, etc.)
 Apache License 2.0 - See [LICENSE](LICENSE) file for details.
 
 Copyright 2026 Scott Friedman
+
+---
+
+## Versioning
+
+This project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html) and maintains a changelog following [Keep a Changelog 1.0.0](https://keepachangelog.com/en/1.0.0/).
+
+- **MAJOR** version for incompatible API changes
+- **MINOR** version for new functionality (backward compatible)
+- **PATCH** version for bug fixes (backward compatible)
+
+See [CHANGELOG.md](CHANGELOG.md) for detailed release notes and [Releases](https://github.com/scttfrdmn/scheduler-job-export/releases) for all versions.
+
+**Current Version:** [v1.0.0](https://github.com/scttfrdmn/scheduler-job-export/releases/tag/v1.0.0)
 
 ---
