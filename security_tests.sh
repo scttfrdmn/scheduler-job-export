@@ -176,10 +176,12 @@ echo -e "${BLUE}Category 5: Valid Input Tests${NC}"
 echo "Testing that valid inputs are accepted..."
 echo ""
 
-# Test 5.1: Normal SLURM date
-test_result "Valid input - SLURM date" \
-    "./export_with_users.sh 2024-01-01 2024-01-02" \
-    0
+# Test 5.1: Normal SLURM date (if SLURM available)
+if command -v sacct &> /dev/null; then
+    test_result "Valid input - SLURM date" \
+        "./export_with_users.sh 2024-01-01 2024-01-02" \
+        0
+fi
 
 # Test 5.2: Valid LSF date (if LSF available)
 if command -v bhist &> /dev/null; then
