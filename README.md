@@ -102,8 +102,18 @@ All scripts produce standardized CSV format with these core columns:
 ## Requirements
 
 ### All Schedulers
-- Bash 4.0+
-- Read access to scheduler accounting data
+
+**No installation required** - these come with most Linux/Unix systems:
+- **Bash:** 3.2+ (tested on macOS, Linux, BSD)
+- **Python:** 3.6+ with standard library only
+  - Uses: csv, sys, datetime, collections, re, os
+  - No pip packages required
+  - No virtual environment needed
+- **Date command:** GNU date or BSD date (auto-detects and uses correct syntax)
+- **Common Unix tools:** wc, head, tail, grep, cut, sort, mktemp (standard everywhere)
+
+**Permissions:**
+- Read access to scheduler accounting data (may require admin/sudo for some schedulers)
 
 ### SLURM
 - `sacct` command available
