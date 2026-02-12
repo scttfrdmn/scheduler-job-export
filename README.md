@@ -81,7 +81,7 @@ All scripts produce standardized CSV format with these core columns:
 | `account` | Accounting/project identifier |
 | `job_id` | Unique job identifier |
 | `job_name` | Job name (if available) |
-| `cpus` | Number of CPUs requested |
+| `cpus_req` | Number of CPUs requested |
 | `mem_req` | Memory requested (MB) |
 | `nodes` | Number of nodes allocated |
 | `nodelist` | List of nodes where job ran |
@@ -89,6 +89,14 @@ All scripts produce standardized CSV format with these core columns:
 | `start_time` | When job started running |
 | `end_time` | When job completed |
 | `exit_status` | Job exit code (0=success, non-zero=failure) |
+| `mem_used` | Peak memory actually used (MB) |
+| `cpu_time_used` | CPU time consumed (seconds) |
+| `walltime_used` | Elapsed/wallclock time (seconds) |
+
+**Resource Requests vs Usage:**
+- **Requests** (`cpus_req`, `mem_req`): What the job asked for
+- **Usage** (`mem_used`, `cpu_time_used`, `walltime_used`): What the job actually consumed
+- Enables efficiency analysis: `efficiency = used / requested`
 
 **Important:** All jobs are captured regardless of outcome - successful completions, failures, cancellations, timeouts, OOM kills, and node failures are all included.
 
