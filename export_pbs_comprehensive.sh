@@ -214,9 +214,9 @@ for acct_file in acct_files:
                 # PBS Pro: Resource_List.ncpus, Resource_List.mem, Resource_List.nodect
                 # Torque: Resource_List.nodes, Resource_List.mem
 
-                # CPUs
+                # CPUs REQUESTED
                 if 'Resource_List.ncpus' in attrs:
-                    record['cpus'] = attrs['Resource_List.ncpus']
+                    record['cpus_req'] = attrs['Resource_List.ncpus']
                 elif 'Resource_List.nodes' in attrs:
                     # Torque format: "2:ppn=16" means 2 nodes, 16 procs per node
                     nodes_spec = attrs['Resource_List.nodes']
@@ -230,9 +230,9 @@ for acct_file in acct_files:
                     if ppn_match:
                         ppn = int(ppn_match.group(1))
                         if record['nodes']:
-                            record['cpus'] = str(num_nodes * ppn)
+                            record['cpus_req'] = str(num_nodes * ppn)
                         else:
-                            record['cpus'] = str(ppn)
+                            record['cpus_req'] = str(ppn)
 
                 # Memory
                 if 'Resource_List.mem' in attrs:
@@ -287,9 +287,44 @@ for acct_file in acct_files:
                     except:
                         pass
 
+                # Resource usage (actual consumption)
+                if 'resources_used.mem' in attrs:
+                    mem_str = attrs['resources_used.mem']
+                    mem_match = re.match(r'(\d+)(gb|mb|kb)?', mem_str.lower())
+                    if mem_match:
+                        mem_value = int(mem_match.group(1))
+                        mem_unit = mem_match.group(2) if mem_match.group(2) else 'kb'
+                        if mem_unit == 'gb':
+                            mem_mb = mem_value * 1024
+                        elif mem_unit == 'kb':
+                            mem_mb = mem_value // 1024
+                        else:
+                            mem_mb = mem_value
+                        record['mem_used'] = str(mem_mb)
+
+                if 'resources_used.cput' in attrs:
+                    cput_str = attrs['resources_used.cput']
+                    parts = cput_str.split(':')
+                    if len(parts) == 3:
+                        try:
+                            h, m, s = parts
+                            record['cpu_time_used'] = str(int(h)*3600 + int(m)*60 + int(s))
+                        except:
+                            pass
+
+                if 'resources_used.walltime' in attrs:
+                    wall_str = attrs['resources_used.walltime']
+                    parts = wall_str.split(':')
+                    if len(parts) == 3:
+                        try:
+                            h, m, s = parts
+                            record['walltime_used'] = str(int(h)*3600 + int(m)*60 + int(s))
+                        except:
+                            pass
+
                 # Defaults
-                if not record['cpus']:
-                    record['cpus'] = '1'
+                if not record['cpus_req']:
+                    record['cpus_req'] = '1'
 
                 records.append(record)
 

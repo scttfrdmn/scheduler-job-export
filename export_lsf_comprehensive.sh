@@ -157,15 +157,56 @@ for line in lines:
                 current_record['command'] = value[:100]  # Truncate long commands
 
             elif key == 'Processors Requested':
-                # Extract number of processors
+                # Extract number of processors REQUESTED
                 match = re.search(r'(\d+)\s+(?:Processor|Task|Core)', value)
                 if match:
-                    current_record['cpus'] = match.group(1)
+                    current_record['cpus_req'] = match.group(1)
                 else:
                     # Try to find any number
                     match = re.search(r'(\d+)', value)
                     if match:
-                        current_record['cpus'] = match.group(1)
+                        current_record['cpus_req'] = match.group(1)
+
+            elif key == 'MAX MEM':
+                # Maximum memory used (in MB or GB)
+                mem_match = re.match(r'([\d.]+)\s*([KMGT])?B?', value.strip())
+                if mem_match:
+                    mem_value = float(mem_match.group(1))
+                    mem_unit = mem_match.group(2) if mem_match.group(2) else 'M'
+                    # Convert to MB
+                    if mem_unit == 'G':
+                        mem_mb = int(mem_value * 1024)
+                    elif mem_unit == 'K':
+                        mem_mb = int(mem_value / 1024)
+                    elif mem_unit == 'T':
+                        mem_mb = int(mem_value * 1024 * 1024)
+                    else:  # M or no unit
+                        mem_mb = int(mem_value)
+                    current_record['mem_used'] = str(mem_mb)
+
+            elif key == 'CPU time':
+                # CPU time in seconds (format: "123.45 sec")
+                cpu_match = re.match(r'([\d.]+)', value.strip())
+                if cpu_match:
+                    current_record['cpu_time_used'] = str(float(cpu_match.group(1)))
+
+            elif 'elapsed time' in key.lower():
+                # Walltime/elapsed time
+                # Format can be "123.45 sec" or "HH:MM:SS"
+                if 'sec' in value:
+                    time_match = re.match(r'([\d.]+)', value.strip())
+                    if time_match:
+                        current_record['walltime_used'] = str(int(float(time_match.group(1))))
+                elif ':' in value:
+                    # Parse HH:MM:SS format
+                    parts = value.strip().split(':')
+                    if len(parts) == 3:
+                        try:
+                            h, m, s = parts
+                            seconds = int(h)*3600 + int(m)*60 + float(s)
+                            current_record['walltime_used'] = str(int(seconds))
+                        except:
+                            pass
 
             elif key == 'Requested Resources':
                 # Extract memory and other resource requests
@@ -249,8 +290,9 @@ if have_bacct and bacct_file:
 # Write CSV with standardized columns
 fieldnames = [
     'user', 'group', 'account', 'job_id', 'job_name', 'queue',
-    'cpus', 'mem_req', 'nodes', 'nodelist', 'submit_time',
-    'start_time', 'end_time', 'exit_status', 'status'
+    'cpus_req', 'mem_req', 'nodes', 'nodelist', 'submit_time',
+    'start_time', 'end_time', 'exit_status', 'status',
+    'mem_used', 'cpu_time_used', 'walltime_used'
 ]
 
 output_records = []
@@ -259,8 +301,8 @@ for rec in records:
     row = {k: rec.get(k, '') for k in fieldnames}
 
     # Set reasonable defaults
-    if not row['cpus']:
-        row['cpus'] = '1'
+    if not row['cpus_req']:
+        row['cpus_req'] = '1'
     if not row['nodes']:
         row['nodes'] = '1'
     if not row['group']:
