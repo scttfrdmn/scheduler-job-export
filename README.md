@@ -316,6 +316,28 @@ pip install ruff  # Optional but recommended
 ./lint_python.sh
 ```
 
+### Security Scanning
+
+**Bandit (Python Security Scanner):**
+```bash
+pip install bandit  # or: pipx install bandit
+./run_bandit.sh
+```
+
+**ShellCheck (Bash Security Linter):**
+```bash
+# macOS
+brew install shellcheck
+
+# Ubuntu/Debian
+apt-get install shellcheck
+
+./run_shellcheck.sh
+```
+
+**Automated CI/CD:**
+All security checks run automatically on every push and pull request via GitHub Actions. See `.github/workflows/security.yml`.
+
 See [TESTING.md](TESTING.md) for complete testing documentation.
 
 ---

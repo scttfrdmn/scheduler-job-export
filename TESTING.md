@@ -63,6 +63,79 @@ pipx install ruff
 
 **Configuration:** See `pyproject.toml` for ruff settings.
 
+## Security Scanning
+
+### Bandit (Python Security Scanner)
+
+Bandit performs static analysis of Python code to find common security issues.
+
+```bash
+./run_bandit.sh
+```
+
+**Prerequisites:**
+```bash
+# Install bandit
+pip install bandit
+# or
+pipx install bandit
+```
+
+**What it checks:**
+- SQL injection vulnerabilities
+- Shell injection risks
+- Hardcoded passwords/secrets
+- Unsafe YAML loading
+- Assert usage in production
+- Insecure cryptographic functions
+- Subprocess security issues
+
+**Configuration:** See `.bandit` for excluded tests and severity thresholds.
+
+### ShellCheck (Bash Security Linter)
+
+ShellCheck analyzes bash scripts for security issues and best practices.
+
+```bash
+./run_shellcheck.sh
+```
+
+**Prerequisites:**
+```bash
+# macOS
+brew install shellcheck
+
+# Ubuntu/Debian
+apt-get install shellcheck
+```
+
+**What it checks:**
+- Command injection vulnerabilities
+- Unquoted variables that could cause issues
+- Missing error handling
+- Race conditions (TOCTOU)
+- Incorrect conditionals
+- Quoting and escaping issues
+- Best practice violations
+
+**Configuration:** See `.shellcheckrc` for disabled checks and shell dialect.
+
+### Security Fuzzing Tests
+
+Comprehensive tests for input validation and injection protection:
+
+```bash
+./security_tests.sh
+```
+
+Tests protection against:
+- Command injection (7 attack patterns)
+- Path traversal (3 attack patterns)
+- Input length attacks (2 patterns)
+- Special characters (5 patterns)
+
+All tests must pass (0 vulnerabilities) before deployment.
+
 ## What Gets Tested
 
 ### Test Coverage
@@ -99,7 +172,32 @@ The linter checks:
 
 ## Continuous Integration
 
-Add to your CI pipeline:
+This repository includes automated security checks via GitHub Actions.
+
+### Security Workflow
+
+See `.github/workflows/security.yml` for the complete CI/CD configuration.
+
+**Runs on:**
+- Every push to `main`
+- Every pull request to `main`
+
+**Security checks performed:**
+1. **Bandit:** Python security scanning
+2. **ShellCheck:** Bash security linting
+3. **Ruff:** Python code quality
+4. **Security fuzzing:** Injection attack tests
+5. **Test harness:** Full test suite
+6. **Snyk:** Dependency vulnerability scanning (main branch only)
+
+**Viewing results:**
+- GitHub Actions tab shows all workflow runs
+- Failed checks block pull request merging
+- Security issues are reported in workflow logs
+
+### Custom CI Pipeline
+
+Add to your own CI pipeline:
 
 ```yaml
 # Example GitHub Actions workflow
@@ -114,9 +212,16 @@ jobs:
         with:
           python-version: '3.9'
       - name: Install dependencies
-        run: pip install ruff
+        run: |
+          pip install ruff bandit
+          sudo apt-get install shellcheck
       - name: Run tests
         run: ./test_exports.sh
+      - name: Run security checks
+        run: |
+          ./run_bandit.sh
+          ./run_shellcheck.sh
+          ./security_tests.sh
       - name: Run linter
         run: ./lint_python.sh
 ```
@@ -260,12 +365,18 @@ echo ""
 
 ```
 .
-├── pyproject.toml          # Ruff configuration
-├── run_checks.sh           # Run all checks
-├── test_exports.sh         # Test harness
-├── lint_python.sh          # Python linting
-├── TESTING.md             # This file
-└── export_*.sh            # Scripts being tested
+├── pyproject.toml                    # Ruff configuration
+├── .bandit                           # Bandit configuration
+├── .shellcheckrc                     # ShellCheck configuration
+├── run_checks.sh                     # Run all checks
+├── test_exports.sh                   # Test harness
+├── lint_python.sh                    # Python linting
+├── run_bandit.sh                     # Bandit security scanner
+├── run_shellcheck.sh                 # ShellCheck linter
+├── security_tests.sh                 # Security fuzzing tests
+├── .github/workflows/security.yml    # CI/CD security workflow
+├── TESTING.md                        # This file
+└── export_*.sh                       # Scripts being tested
 ```
 
 ## Best Practices
@@ -284,7 +395,7 @@ Potential improvements:
 - [ ] Integration tests with mock scheduler data
 - [ ] Performance benchmarks
 - [ ] Code coverage reporting
-- [ ] Automated security scanning
+- [x] Automated security scanning (✓ Completed: Bandit, ShellCheck, Snyk)
 - [ ] Docker-based testing environment
 - [ ] Multi-scheduler CI testing
 
