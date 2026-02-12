@@ -111,17 +111,23 @@ log_info "Detected columns: $HEADER"
 # Detect user and group columns
 USER_COL=""
 GROUP_COL=""
+ACCOUNT_COL=""
 COL_NUM=1
 
 IFS=',' read -ra COLS <<< "$HEADER"
 for col in "${COLS[@]}"; do
     col_lower=$(echo "$col" | tr '[:upper:]' '[:lower:]' | tr -d ' ')
 
-    # Detect user column
-    if [[ "$col_lower" =~ ^(user|uid|username|account)$ ]]; then
+    # Detect user column (prefer 'user' over 'account')
+    if [[ "$col_lower" =~ ^(user|uid|username)$ ]]; then
         USER_COL="$col"
         USER_COL_NUM=$COL_NUM
         log_info "Found user column: '$USER_COL' (position $USER_COL_NUM)"
+    elif [[ "$col_lower" =~ ^(account)$ ]] && [ -z "$USER_COL" ]; then
+        # Only use 'account' if no 'user' column found yet
+        ACCOUNT_COL="$col"
+        ACCOUNT_COL_NUM=$COL_NUM
+        log_info "Found account column: '$ACCOUNT_COL' (position $ACCOUNT_COL_NUM)"
     fi
 
     # Detect group column
@@ -133,6 +139,13 @@ for col in "${COLS[@]}"; do
 
     ((COL_NUM++))
 done
+
+# If no explicit 'user' column found, use 'account' as fallback
+if [ -z "$USER_COL" ] && [ -n "$ACCOUNT_COL" ]; then
+    USER_COL="$ACCOUNT_COL"
+    USER_COL_NUM=$ACCOUNT_COL_NUM
+    log_info "Using account column as user column (no explicit 'user' column found)"
+fi
 
 # Validate columns found
 if [ -z "$USER_COL" ] && [ -z "$GROUP_COL" ]; then
