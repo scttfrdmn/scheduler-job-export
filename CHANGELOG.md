@@ -26,6 +26,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Priority tracking**: Job priority value from qacct
   - **CPU allocation**: Actual CPUs allocated (from slots)
   - **Most complete**: Now has 21 columns (84% of SLURM's 25)
+- **Enhanced HTCondor Export** (#16): Status and priority tracking
+  - **New columns**: `status`, `priority`
+  - **Column count**: Increased from 17 to 19 columns
+  - **Status mapping**: Human-readable job status (IDLE, RUNNING, COMPLETED, HELD, etc.)
+  - **Priority tracking**: Job priority value from ClassAds
+  - **Job lifecycle**: Track job state changes and held jobs
 
 ### Fixed
 - **PBS Export**: Fixed fieldnames mismatch (was `cpus`, should be `cpus_req`)

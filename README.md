@@ -261,7 +261,15 @@ qacct -b 01/01/2020 -e 01/02/2020
 ./export_htcondor_data.sh 365  # Last 365 days
 ```
 
-**Output:** `htcondor_jobs_with_users_YYYYMMDD.csv`
+**Output:** `htcondor_jobs_with_users_YYYYMMDD.csv` (19 columns)
+
+**Job Lifecycle Tracking:**
+- Now includes `status` (IDLE, RUNNING, COMPLETED, HELD, etc.)
+- Now includes `priority` (job priority value)
+- Job status mapping from HTCondor codes to human-readable strings
+- Priority-based scheduling analysis
+
+**Note:** HTCondor architecture differs from traditional schedulers (no queues/partitions/reservations).
 
 ### Auto-Detection
 

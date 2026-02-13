@@ -42,6 +42,7 @@ condor_history -constraint "CompletionDate > (time() - ($DAYS_AGO * 86400))" \
     ClusterId \
     ProcId \
     JobStatus \
+    JobPrio \
     RequestCpus \
     RequestMemory \
     NumJobStarts \
@@ -93,6 +94,23 @@ with open(sys.argv[1], 'r') as f:
             except:
                 return ts_str
 
+        # Map HTCondor JobStatus integer to string
+        def map_job_status(status_code):
+            """
+            Convert HTCondor JobStatus code to human-readable string.
+            1=Idle, 2=Running, 3=Removed, 4=Completed, 5=Held, 6=Transferring, 7=Suspended
+            """
+            status_map = {
+                '1': 'IDLE',
+                '2': 'RUNNING',
+                '3': 'REMOVED',
+                '4': 'COMPLETED',
+                '5': 'HELD',
+                '6': 'TRANSFERRING',
+                '7': 'SUSPENDED'
+            }
+            return status_map.get(status_code, status_code)
+
         # Parse AcctGroup or AccountingGroup for group info
         # Format is usually "group_name.username"
         acct_group = rec.get('AcctGroup', rec.get('AccountingGroup', ''))
@@ -129,6 +147,13 @@ with open(sys.argv[1], 'r') as f:
         except:
             pass
 
+        # Map job status code to string
+        job_status_code = rec.get('JobStatus', '')
+        status = map_job_status(job_status_code)
+
+        # Get priority value
+        priority = rec.get('JobPrio', '')
+
         record = {
             'user': rec.get('Owner', ''),
             'group': group,
@@ -144,9 +169,11 @@ with open(sys.argv[1], 'r') as f:
             'start_time': convert_time(rec.get('JobStartDate', '')),
             'end_time': convert_time(rec.get('CompletionDate', '')),
             'exit_status': rec.get('ExitCode', ''),
+            'status': status,
             'mem_used': mem_used,
             'cpu_time_used': cpu_time_used,
             'walltime_used': walltime_used,
+            'priority': priority,
         }
         records.append(record)
 
@@ -156,8 +183,8 @@ print(f"Parsed {len(records)} job records", file=sys.stderr)
 fieldnames = [
     'user', 'group', 'account', 'job_id', 'job_name', 'queue',
     'cpus_req', 'mem_req', 'nodes', 'nodelist', 'submit_time',
-    'start_time', 'end_time', 'exit_status', 'mem_used',
-    'cpu_time_used', 'walltime_used'
+    'start_time', 'end_time', 'exit_status', 'status', 'mem_used',
+    'cpu_time_used', 'walltime_used', 'priority'
 ]
 
 with open(sys.argv[2], 'w', newline='') as csvfile:
