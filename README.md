@@ -241,9 +241,15 @@ VERBOSE=1 sudo ./export_pbs_comprehensive.sh 20240101 20241231
 qacct -b 01/01/2020 -e 01/02/2020
 ```
 
-**Output:** `uge_jobs_with_users_YYYYMMDD.csv`, `uge_cluster_config.csv`
+**Output:** `uge_jobs_with_users_YYYYMMDD.csv` (21 columns), `uge_cluster_config.csv`
 
-**Note:** UGE captures parallel environment (PE) jobs with `pe_name` and `slots` columns.
+**Enhanced Scheduling Tracking:**
+- Now includes `priority` (job priority value from qacct)
+- Now includes `cpus_alloc` (actual CPUs allocated, same as slots)
+- Priority-based fair share analysis
+- Accurate CPU allocation tracking
+
+**Note:** UGE captures parallel environment (PE) jobs with `pe_name` and `slots` columns, making it the most feature-complete export (21 columns).
 
 ### HTCondor
 

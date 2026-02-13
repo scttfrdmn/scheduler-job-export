@@ -263,6 +263,12 @@ for line in lines:
             elif key == 'slots':
                 current_record['slots'] = value
                 current_record['cpus_req'] = value
+                # Slots represents actual allocated CPUs
+                current_record['cpus_alloc'] = value
+
+            elif key == 'priority':
+                # Job priority value (decimal)
+                current_record['priority'] = value
 
             elif key == 'granted_pe':
                 # Parallel environment name (e.g., "mpi", "smp", "openmpi")
@@ -423,7 +429,8 @@ fieldnames = [
     'user', 'group', 'account', 'job_id', 'job_name', 'queue',
     'cpus_req', 'mem_req', 'nodes', 'nodelist', 'submit_time',
     'start_time', 'end_time', 'exit_status', 'pe_name', 'slots',
-    'mem_used', 'cpu_time_used', 'walltime_used'
+    'mem_used', 'cpu_time_used', 'walltime_used',
+    'priority', 'cpus_alloc'
 ]
 
 output_records = []

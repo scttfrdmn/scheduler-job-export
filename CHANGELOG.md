@@ -20,6 +20,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **QoS detection**: Project Name or Service Class
   - **Priority tracking**: Job priority value from bhist
   - **Fair share analysis**: Track QoS usage distribution
+- **Enhanced UGE Export** (#15): Priority and CPU allocation tracking
+  - **New columns**: `priority`, `cpus_alloc`
+  - **Column count**: Increased from 19 to 21 columns
+  - **Priority tracking**: Job priority value from qacct
+  - **CPU allocation**: Actual CPUs allocated (from slots)
+  - **Most complete**: Now has 21 columns (84% of SLURM's 25)
 
 ### Fixed
 - **PBS Export**: Fixed fieldnames mismatch (was `cpus`, should be `cpus_req`)
