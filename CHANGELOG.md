@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Planned
+- Unit tests for Python functions (#1)
+- Integration tests with mock scheduler data (#2)
+- Performance benchmarks and profiling (#3)
+- Code coverage reporting (#4)
+- Docker-based testing environment (#5)
+- Multi-scheduler CI testing matrix (#6)
+- Address ShellCheck style recommendations (#7)
+- Refactor export scripts to reduce code duplication (#8)
+- Configurable output formats (JSON, Parquet) (#9)
+- Incremental exports with state tracking (#10)
+
+## [1.1.0] - 2026-02-13
+
 ### Added
 - **Enhanced SLURM Export** (#12): GPU, node type, and QoS data for advanced Service Unit calculations
   - **New columns**: `partition`, `qos`, `priority`, `reservation`, `gpu_count`, `gpu_types`, `node_type`
@@ -31,18 +45,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 - Dead code block (54 lines) from SLURM export script that never executed
-
-### Planned
-- Unit tests for Python functions (#1)
-- Integration tests with mock scheduler data (#2)
-- Performance benchmarks and profiling (#3)
-- Code coverage reporting (#4)
-- Docker-based testing environment (#5)
-- Multi-scheduler CI testing matrix (#6)
-- Address ShellCheck style recommendations (#7)
-- Refactor export scripts to reduce code duplication (#8)
-- Configurable output formats (JSON, Parquet) (#9)
-- Incremental exports with state tracking (#10)
 
 ## [1.0.0] - 2026-02-12
 
@@ -119,6 +121,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Version History
 
+- **[1.1.0]** - 2026-02-13 - Enhanced SLURM export with GPU tracking
 - **[1.0.0]** - 2026-02-12 - Production ready release
 - **[0.1.0]** - Initial development
 
