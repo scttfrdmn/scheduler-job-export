@@ -7,35 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-- **Enhanced PBS Export** (#13): Resource usage metrics for accurate SU calculations
-  - **New columns**: `mem_used`, `cpu_time_used`, `walltime_used`, `cpus_alloc`
-  - **Column count**: Increased from 14 to 18 columns
-  - **Resource comparison**: Compare requested vs. actual usage
-  - **CPU allocation tracking**: Count actual CPUs from exec_host
-  - **Already available**: Data was being parsed but not exported
-- **Enhanced LSF Export** (#14): QoS and priority for priority-based accounting
-  - **New columns**: `qos`, `priority`
-  - **Column count**: Increased from 18 to 20 columns
-  - **QoS detection**: Project Name or Service Class
-  - **Priority tracking**: Job priority value from bhist
-  - **Fair share analysis**: Track QoS usage distribution
-- **Enhanced UGE Export** (#15): Priority and CPU allocation tracking
-  - **New columns**: `priority`, `cpus_alloc`
-  - **Column count**: Increased from 19 to 21 columns
-  - **Priority tracking**: Job priority value from qacct
-  - **CPU allocation**: Actual CPUs allocated (from slots)
-  - **Most complete**: Now has 21 columns (84% of SLURM's 25)
-- **Enhanced HTCondor Export** (#16): Status and priority tracking
-  - **New columns**: `status`, `priority`
-  - **Column count**: Increased from 17 to 19 columns
-  - **Status mapping**: Human-readable job status (IDLE, RUNNING, COMPLETED, HELD, etc.)
-  - **Priority tracking**: Job priority value from ClassAds
-  - **Job lifecycle**: Track job state changes and held jobs
-
-### Fixed
-- **PBS Export**: Fixed fieldnames mismatch (was `cpus`, should be `cpus_req`)
-
 ### Planned
 - Unit tests for Python functions (#1)
 - Integration tests with mock scheduler data (#2)
@@ -47,6 +18,75 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Refactor export scripts to reduce code duplication (#8)
 - Configurable output formats (JSON, Parquet) (#9)
 - Incremental exports with state tracking (#10)
+
+## [1.2.0] - 2026-02-13
+
+### Added
+
+**Multi-Scheduler Enhancements** - Quick wins series bringing all schedulers closer to SLURM parity
+
+- **Enhanced PBS Export** (#13): Resource usage metrics for accurate SU calculations
+  - **New columns**: `mem_used`, `cpu_time_used`, `walltime_used`, `cpus_alloc`
+  - **Column count**: Increased from 14 to 18 columns (56% → 72% of SLURM)
+  - **Resource comparison**: Compare requested vs. actual usage
+  - **CPU allocation tracking**: Count actual CPUs from exec_host format
+  - **Key insight**: Data was already being parsed but not exported
+  - **Impact**: +4 columns, enables accurate SU calculations
+
+- **Enhanced LSF Export** (#14): QoS and priority for priority-based accounting
+  - **New columns**: `qos`, `priority`
+  - **Column count**: Increased from 18 to 20 columns (72% → 80% of SLURM)
+  - **QoS detection**: Project Name or Service Class
+  - **Priority tracking**: Job priority value from bhist -l
+  - **Fair share analysis**: Track QoS usage distribution
+  - **Dual mapping**: Project Name serves as both account and qos
+  - **Impact**: +2 columns, enables priority-based SU multipliers
+
+- **Enhanced UGE Export** (#15): Priority and CPU allocation tracking
+  - **New columns**: `priority`, `cpus_alloc`
+  - **Column count**: Increased from 19 to 21 columns (76% → 84% of SLURM)
+  - **Priority tracking**: Job priority value from qacct
+  - **CPU allocation**: Actual CPUs allocated (from slots field)
+  - **Most complete**: Now has 21 columns - most feature-complete traditional scheduler
+  - **UGE advantage**: Includes unique PE tracking (pe_name, slots)
+  - **Impact**: +2 columns, closest to SLURM parity
+
+- **Enhanced HTCondor Export** (#16): Status and priority tracking
+  - **New columns**: `status`, `priority`
+  - **Column count**: Increased from 17 to 19 columns (68% → 76% of SLURM)
+  - **Status mapping**: Human-readable job status (IDLE, RUNNING, COMPLETED, HELD, etc.)
+  - **Priority tracking**: Job priority value from ClassAds
+  - **Job lifecycle**: Track job state changes and held jobs
+  - **Debugging support**: Identify held or problematic jobs
+  - **Impact**: +2 columns, enables job lifecycle analysis
+
+### Fixed
+- **PBS Export**: Fixed fieldnames mismatch (was `cpus`, should be `cpus_req`)
+
+### Changed
+- **Documentation**: Updated README.md with column counts and new features for all schedulers
+- **CHANGELOG**: Comprehensive documentation of all enhancements
+
+### Summary
+
+**Total Impact:**
+- **4 schedulers enhanced** (PBS, LSF, UGE, HTCondor)
+- **10 new columns** added across all schedulers
+- **All schedulers now at 72-84%** of SLURM's capabilities (up from 56-76%)
+- **~4 hours total effort** (all from readily available data)
+
+**Column Count Progression:**
+- PBS: 14 → 18 (+4 columns)
+- LSF: 18 → 20 (+2 columns)
+- UGE: 19 → 21 (+2 columns)
+- HTCondor: 17 → 19 (+2 columns)
+
+**New Capabilities:**
+- Resource usage comparison (requested vs actual)
+- Priority-based fair share analysis
+- QoS-specific accounting
+- Job lifecycle tracking
+- Accurate Service Unit calculations
 
 ## [1.1.0] - 2026-02-13
 
@@ -150,6 +190,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Version History
 
+- **[1.2.0]** - 2026-02-13 - Multi-scheduler enhancements (PBS, LSF, UGE, HTCondor)
 - **[1.1.0]** - 2026-02-13 - Enhanced SLURM export with GPU tracking
 - **[1.0.0]** - 2026-02-12 - Production ready release
 - **[0.1.0]** - Initial development
