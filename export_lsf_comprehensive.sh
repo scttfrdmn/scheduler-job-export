@@ -168,6 +168,20 @@ for line in lines:
 
             elif key == 'Project Name':
                 current_record['account'] = value
+                # Also use Project Name as QoS identifier
+                current_record['qos'] = value
+
+            elif key == 'Service Class':
+                # Service Class can be used as QoS (alternative to Project Name)
+                if 'qos' not in current_record or not current_record['qos']:
+                    current_record['qos'] = value
+
+            elif key == 'Priority':
+                # Job priority value
+                # Format: usually an integer or float
+                priority_match = re.search(r'([\d.]+)', value)
+                if priority_match:
+                    current_record['priority'] = priority_match.group(1)
 
             elif key == 'Job Name':
                 current_record['job_name'] = value
@@ -315,7 +329,8 @@ fieldnames = [
     'user', 'group', 'account', 'job_id', 'job_name', 'queue',
     'cpus_req', 'mem_req', 'nodes', 'nodelist', 'submit_time',
     'start_time', 'end_time', 'exit_status', 'status',
-    'mem_used', 'cpu_time_used', 'walltime_used'
+    'mem_used', 'cpu_time_used', 'walltime_used',
+    'qos', 'priority'
 ]
 
 output_records = []

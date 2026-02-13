@@ -14,6 +14,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Resource comparison**: Compare requested vs. actual usage
   - **CPU allocation tracking**: Count actual CPUs from exec_host
   - **Already available**: Data was being parsed but not exported
+- **Enhanced LSF Export** (#14): QoS and priority for priority-based accounting
+  - **New columns**: `qos`, `priority`
+  - **Column count**: Increased from 18 to 20 columns
+  - **QoS detection**: Project Name or Service Class
+  - **Priority tracking**: Job priority value from bhist
+  - **Fair share analysis**: Track QoS usage distribution
 
 ### Fixed
 - **PBS Export**: Fixed fieldnames mismatch (was `cpus`, should be `cpus_req`)

@@ -198,7 +198,13 @@ This enables accurate Service Unit (SU) calculations where GPUs represent 50%+ o
 nohup ./export_lsf_comprehensive.sh 2024/01/01 2024/12/31 &
 ```
 
-**Output:** `lsf_jobs_comprehensive_YYYYMMDD.csv`, `lsf_cluster_config.csv`
+**Output:** `lsf_jobs_comprehensive_YYYYMMDD.csv` (20 columns), `lsf_cluster_config.csv`
+
+**Scheduling and Priority Tracking:**
+- Now includes `qos` (Quality of Service from Project Name or Service Class)
+- Now includes `priority` (job priority value)
+- Priority-based accounting for fair share analysis
+- QoS-specific weight factors for SU calculations
 
 ### PBS/Torque
 
