@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Enhanced PBS Export** (#13): Resource usage metrics for accurate SU calculations
+  - **New columns**: `mem_used`, `cpu_time_used`, `walltime_used`, `cpus_alloc`
+  - **Column count**: Increased from 14 to 18 columns
+  - **Resource comparison**: Compare requested vs. actual usage
+  - **CPU allocation tracking**: Count actual CPUs from exec_host
+  - **Already available**: Data was being parsed but not exported
+
+### Fixed
+- **PBS Export**: Fixed fieldnames mismatch (was `cpus`, should be `cpus_req`)
+
 ### Planned
 - Unit tests for Python functions (#1)
 - Integration tests with mock scheduler data (#2)

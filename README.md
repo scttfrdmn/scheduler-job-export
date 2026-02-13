@@ -214,7 +214,12 @@ sudo ./export_pbs_comprehensive.sh 20240101 20241231
 VERBOSE=1 sudo ./export_pbs_comprehensive.sh 20240101 20241231
 ```
 
-**Output:** `pbs_jobs_with_users_YYYYMMDD.csv`, `pbs_cluster_config.csv`
+**Output:** `pbs_jobs_with_users_YYYYMMDD.csv` (18 columns), `pbs_cluster_config.csv`
+
+**Enhanced Resource Tracking:**
+- Now includes `mem_used`, `cpu_time_used`, `walltime_used`, `cpus_alloc`
+- Compare requested vs. actual resource usage
+- Accurate Service Unit calculations based on actual consumption
 
 ### UGE/SGE
 

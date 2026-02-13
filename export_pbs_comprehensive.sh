@@ -236,7 +236,7 @@ for acct_file in acct_files:
                     'job_id': job_id,
                     'job_name': attrs.get('jobname', ''),
                     'queue': attrs.get('queue', ''),
-                    'cpus': '',
+                    'cpus_req': '',
                     'mem_req': '',
                     'nodes': '',
                     'nodelist': '',
@@ -244,6 +244,10 @@ for acct_file in acct_files:
                     'start_time': '',
                     'end_time': end_time,
                     'exit_status': attrs.get('Exit_status', ''),
+                    'mem_used': '',
+                    'cpu_time_used': '',
+                    'walltime_used': '',
+                    'cpus_alloc': ''
                 }
 
                 # Parse resource requests
@@ -306,6 +310,23 @@ for acct_file in acct_files:
                         record['nodelist'] = ','.join(unique_nodes)
                         if not record['nodes']:
                             record['nodes'] = str(len(unique_nodes))
+
+                    # Count allocated CPUs from exec_host
+                    # Format: "node1/0*2+node2/0*4" means 2+4=6 CPUs
+                    # Format: "node1/0+node1/1" means 1+1=2 CPUs (no multiplier)
+                    cpu_count = 0
+                    for part in exec_host.split('+'):
+                        if '*' in part:
+                            # Has multiplier: "node1/0*4"
+                            multiplier_match = re.search(r'\*(\d+)', part)
+                            if multiplier_match:
+                                cpu_count += int(multiplier_match.group(1))
+                        else:
+                            # No multiplier: "node1/0" means 1 CPU
+                            cpu_count += 1
+
+                    if cpu_count > 0:
+                        record['cpus_alloc'] = str(cpu_count)
 
                 # Submit time (ctime = creation time)
                 if 'ctime' in attrs:
@@ -373,8 +394,9 @@ print(f"\nParsed {records_found} job records from {files_processed} files", file
 # Write CSV
 fieldnames = [
     'user', 'group', 'account', 'job_id', 'job_name', 'queue',
-    'cpus', 'mem_req', 'nodes', 'nodelist', 'submit_time',
-    'start_time', 'end_time', 'exit_status'
+    'cpus_req', 'mem_req', 'nodes', 'nodelist', 'submit_time',
+    'start_time', 'end_time', 'exit_status',
+    'mem_used', 'cpu_time_used', 'walltime_used', 'cpus_alloc'
 ]
 
 with open(output_file, 'w', newline='') as csvfile:
