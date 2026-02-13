@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Enhanced SLURM Export** (#12): GPU, node type, and QoS data for advanced Service Unit calculations
+  - **New columns**: `partition`, `qos`, `priority`, `reservation`, `gpu_count`, `gpu_types`, `node_type`
+  - **GPU Detection**: Automatic parsing of TRES allocation format
+    - Extracts total GPU count and GPU types (e.g., "v100:2,a100:1")
+    - Supports heterogeneous GPU jobs (multiple GPU types)
+    - Sorted by count descending (dominant type first)
+  - **Node Type Classification**: Multi-tier detection logic
+    - Hardware-based (GPU count > 0 → "gpu")
+    - Partition name patterns (highmem, largemem, gpu)
+    - QoS policy hints (gpu-qos, highmem-qos)
+    - Default fallback ("compute")
+  - **Scheduling Information**: Partition, QoS, priority, and reservation data
+  - **Column count**: Increased from 18 to 25 columns
+  - **Backward compatible**: New columns added at end, empty strings for missing data
+  - **Performance**: Lightweight regex parsing with <10% overhead
+
+### Changed
+- SLURM export now queries 5 additional sacct fields (Partition, QOS, Priority, Reservation, AllocTRES)
+- Updated job data format documentation with 7 new columns
+- Added GPU tracking and node classification examples to README
+
+### Removed
+- Dead code block (54 lines) from SLURM export script that never executed
+
 ### Planned
 - Unit tests for Python functions (#1)
 - Integration tests with mock scheduler data (#2)

@@ -85,10 +85,20 @@ All scripts produce standardized CSV with these columns:
 | `start_time` | Start timestamp |
 | `end_time` | Completion timestamp |
 | `exit_status` | Exit code (0=success) |
+| `cpus_alloc` | CPUs actually allocated |
+| `partition` | SLURM partition/queue name |
+| `qos` | Quality of Service policy |
+| `priority` | Job priority value |
+| `reservation` | Reservation name (if used) |
+| `gpu_count` | Total GPUs allocated |
+| `gpu_types` | GPU models with counts (e.g., "v100:2,a100:1") |
+| `node_type` | Node category (gpu/highmem/largemem/compute) |
 
 **Key Features:**
 - **All outcomes captured:** Success, failure, timeout, cancellation, OOM
 - **Resource efficiency:** Compare requested vs. used resources
+- **GPU tracking:** Automatic detection of GPU count and types (SLURM)
+- **Node classification:** Hardware-based detection of node types (SLURM)
 - **Scheduler-specific:** Some include `queue`, `status`, `pe_name` columns
 
 ### Cluster Configuration Format
@@ -145,7 +155,34 @@ All scripts: `./export_script [START_DATE] [END_DATE]`
 ./export_with_users.sh $(date -d '90 days ago' '+%Y-%m-%d') $(date '+%Y-%m-%d')
 ```
 
-**Output:** `slurm_jobs_with_users_YYYYMMDD.csv`, `slurm_cluster_config.csv`
+**Output:** `slurm_jobs_with_users_YYYYMMDD.csv` (25 columns), `slurm_cluster_config.csv`
+
+**GPU and Advanced Resource Tracking:**
+
+SLURM exports include enhanced resource tracking for modern HPC environments:
+
+- **GPU Detection:** Automatically extracts GPU count and types from TRES allocation
+  - Example: `gpu_count=4`, `gpu_types="v100:2,a100:2"`
+  - Supports heterogeneous GPU jobs (multiple GPU types)
+  - Empty for non-GPU jobs (not "0" or "none")
+
+- **Node Type Classification:** Multi-tier detection based on:
+  1. Hardware presence (GPU count > 0 → "gpu")
+  2. Partition name patterns (highmem, largemem, gpu)
+  3. QoS policy hints (gpu-qos, highmem-qos)
+  4. Default fallback ("compute")
+
+- **Scheduling Information:** Partition, QoS, priority, and reservation data for advanced analysis
+
+**Example Output for GPU Job:**
+```csv
+user,group,account,job_id,...,gpu_count,gpu_types,node_type
+alice,research,proj123,12345,...,4,"v100:4",gpu
+bob,physics,proj456,12346,...,2,"a100:2",gpu
+charlie,chem,proj789,12347,...,"","",compute
+```
+
+This enables accurate Service Unit (SU) calculations where GPUs represent 50%+ of resource value.
 
 ### LSF
 
