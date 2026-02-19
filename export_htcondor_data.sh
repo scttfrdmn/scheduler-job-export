@@ -54,6 +54,9 @@ condor_history -constraint "CompletionDate > (time() - ($DAYS_AGO * 86400))" \
     MemoryUsage \
     RemoteSysCpu \
     RemoteUserCpu \
+    RemoteWallClockTime \
+    CumulativeRemoteSysCpu \
+    CumulativeRemoteUserCpu \
     > "$TEMP_FILE"
 
 echo "Parsing HTCondor output into CSV format..."
@@ -120,32 +123,55 @@ with open(sys.argv[1], 'r') as f:
 
         # Extract hostname from LastRemoteHost
         # Format: "slot1@hostname.domain"
+        # Note: for multi-slot jobs, HTCondor history only records the last host
         nodelist = rec.get('LastRemoteHost', '')
         if '@' in nodelist:
             nodelist = nodelist.split('@')[1].split(':')[0]
 
         # Calculate actual resource usage
-        mem_used = rec.get('MemoryUsage', '')  # In MB
+        # MemoryUsage is in MB (HTCondor ClassAd standard unit)
+        mem_used = rec.get('MemoryUsage', '')
 
-        # CPU time used (sys + user CPU in seconds)
+        # CPU time used - use cumulative fields to handle job restarts correctly
+        # CumulativeRemoteSysCpu/UserCpu accumulate across all executions
+        # RemoteSysCpu/UserCpu only reflect the last execution
         cpu_time_used = ''
-        sys_cpu = rec.get('RemoteSysCpu', '0')
-        user_cpu = rec.get('RemoteUserCpu', '0')
-        try:
-            cpu_seconds = float(sys_cpu) + float(user_cpu)
-            cpu_time_used = str(int(cpu_seconds))
-        except:
-            pass
+        cum_sys = rec.get('CumulativeRemoteSysCpu', '')
+        cum_user = rec.get('CumulativeRemoteUserCpu', '')
+        if cum_sys and cum_sys not in ('undefined', '0') and cum_user and cum_user not in ('undefined',):
+            try:
+                cpu_seconds = float(cum_sys) + float(cum_user)
+                cpu_time_used = str(int(cpu_seconds))
+            except:
+                pass
+        if not cpu_time_used:
+            # Fall back to non-cumulative (equivalent when NumJobStarts == 1)
+            sys_cpu = rec.get('RemoteSysCpu', '0')
+            user_cpu = rec.get('RemoteUserCpu', '0')
+            try:
+                cpu_seconds = float(sys_cpu) + float(user_cpu)
+                cpu_time_used = str(int(cpu_seconds))
+            except:
+                pass
 
-        # Walltime used (completion - start)
+        # Walltime used - prefer RemoteWallClockTime (cumulative across all restarts)
+        # CompletionDate - JobStartDate only covers the last execution
         walltime_used = ''
-        try:
-            start_ts = int(float(rec.get('JobStartDate', '0')))
-            end_ts = int(float(rec.get('CompletionDate', '0')))
-            if start_ts > 0 and end_ts > 0:
-                walltime_used = str(end_ts - start_ts)
-        except:
-            pass
+        remote_wall = rec.get('RemoteWallClockTime', '')
+        if remote_wall and remote_wall not in ('undefined', '0'):
+            try:
+                walltime_used = str(int(float(remote_wall)))
+            except:
+                pass
+        if not walltime_used:
+            # Fall back to last-execution duration
+            try:
+                start_ts = int(float(rec.get('JobStartDate', '0')))
+                end_ts = int(float(rec.get('CompletionDate', '0')))
+                if start_ts > 0 and end_ts > 0:
+                    walltime_used = str(end_ts - start_ts)
+            except:
+                pass
 
         # Map job status code to string
         job_status_code = rec.get('JobStatus', '')

@@ -286,7 +286,7 @@ for line in lines:
                 # Maximum virtual memory USED (not requested!)
                 mem_str = value
                 # Parse formats: "8.000G", "8192.000M", "8388608.000K"
-                mem_match = re.match(r'([\d.]+)([GMKT])?', mem_str)
+                mem_match = re.match(r'^([\d.]+)([GMKT])?$', mem_str.strip())
                 if mem_match:
                     mem_value = float(mem_match.group(1))
                     mem_unit = mem_match.group(2) if mem_match.group(2) else 'M'
@@ -318,13 +318,14 @@ for line in lines:
                     pass
 
             elif key == 'ru_maxrss':
-                # Maximum resident set size (if maxvmem not available)
-                if 'mem_req' not in current_record:
-                    # This is in KB typically
+                # Resident set size as fallback for mem_used (when maxvmem not available)
+                # ru_maxrss reflects actual memory used, not requested
+                if 'mem_used' not in current_record or not current_record['mem_used']:
+                    # ru_maxrss is in KB
                     try:
                         mem_kb = float(value)
                         mem_mb = int(mem_kb / 1024)
-                        current_record['mem_req'] = str(mem_mb)
+                        current_record['mem_used'] = str(mem_mb)
                     except:
                         pass
 
