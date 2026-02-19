@@ -105,6 +105,14 @@ with open(output_file, 'w', newline='') as csvfile:
         if len(fields) < len(header):
             continue
 
+        # Skip job step records (JobID contains '.', e.g. "12345.batch", "12345.0")
+        # We only want job-level allocation records.
+        # At the job level, sacct aggregates MaxRSS as the max across all steps.
+        # Without this filter, every job appears 2-3x (job + batch step + any named steps).
+        job_id_raw = fields[3] if len(fields) > 3 else ''
+        if '.' in job_id_raw:
+            continue
+
         # Map sacct fields to standardized names
         # Parse memory fields (MaxRSS can be like "1234567K" or "1234M")
         max_rss = fields[14] if len(fields) > 14 else ''
