@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Planned
+
+## [1.2.1] - 2026-02-19
+
+### Fixed
+- **SLURM Export**: Skip job step records in sacct output to prevent duplicate rows and ensure accurate resource usage data
+  - `sacct` returns both job-level records (`12345`) and step records (`12345.batch`, `12345.0`) in the same output
+  - Without filtering, each job appeared 2-3 times in the CSV
+  - At the job level, SLURM aggregates `MaxRSS` as the max across all steps, so `mem_used` is correctly populated without reading step records
+  - Array jobs (`12345_1`) are correctly kept; array steps (`12345_1.batch`) are skipped
+  - Ensures accurate `mem_used`, `cpu_time_used`, and `walltime_used` values
 - Unit tests for Python functions (#1)
 - Integration tests with mock scheduler data (#2)
 - Performance benchmarks and profiling (#3)
@@ -190,6 +200,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Version History
 
+- **[1.2.1]** - 2026-02-19 - Fix SLURM duplicate rows from sacct step records
 - **[1.2.0]** - 2026-02-13 - Multi-scheduler enhancements (PBS, LSF, UGE, HTCondor)
 - **[1.1.0]** - 2026-02-13 - Enhanced SLURM export with GPU tracking
 - **[1.0.0]** - 2026-02-12 - Production ready release
