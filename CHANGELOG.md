@@ -9,6 +9,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 
+## [1.2.2] - 2026-02-19
+
+### Fixed
+- **UGE Export**: Correct `ru_maxrss` to serve as fallback for `mem_used` (not `mem_req`)
+  - `ru_maxrss` is "Maximum Resident Set Size" — actual memory **used**, not requested
+  - Previously, `ru_maxrss` populated `mem_req` instead of `mem_used` when `maxvmem` was missing
+  - This caused `mem_used` to remain blank for jobs where `maxvmem` was unavailable
+  - Fix: check and set `mem_used` (with `ru_maxrss` as fallback source)
+- **UGE Export**: Anchor `maxvmem` parsing regex to prevent partial string matches
+- **HTCondor Export**: Use cumulative CPU fields for jobs that restart
+  - Added `CumulativeRemoteSysCpu` and `CumulativeRemoteUserCpu` to `condor_history` query
+  - Previously, `RemoteSysCpu + RemoteUserCpu` only captured the **last execution** for restarted jobs
+  - Fix: prefer cumulative fields (accurate across all executions); fall back to non-cumulative
+- **HTCondor Export**: Use `RemoteWallClockTime` for walltime (cumulative across restarts)
+  - Added `RemoteWallClockTime` to `condor_history` query
+  - Previously, `CompletionDate - JobStartDate` only measured the **last execution's** duration
+  - Fix: prefer `RemoteWallClockTime` (cumulative); fall back to last-execution duration
+- **HTCondor Export**: Document `MemoryUsage` units (MB) and `LastRemoteHost` limitation for multi-slot jobs
+
 ## [1.2.1] - 2026-02-19
 
 ### Fixed
@@ -200,6 +219,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Version History
 
+- **[1.2.2]** - 2026-02-19 - Fix UGE mem_used and HTCondor cumulative resource usage
 - **[1.2.1]** - 2026-02-19 - Fix SLURM duplicate rows from sacct step records
 - **[1.2.0]** - 2026-02-13 - Multi-scheduler enhancements (PBS, LSF, UGE, HTCondor)
 - **[1.1.0]** - 2026-02-13 - Enhanced SLURM export with GPU tracking
