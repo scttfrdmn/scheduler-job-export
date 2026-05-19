@@ -62,7 +62,7 @@ condor_history -constraint "CompletionDate > (time() - ($DAYS_AGO * 86400))" \
 echo "Parsing HTCondor output into CSV format..."
 
 # Parse condor_history output into CSV
-python3 << 'PYTHON_EOF'
+python3 - "$TEMP_FILE" "$OUTPUT_FILE" << 'PYTHON_EOF'
 import sys
 import csv
 from datetime import datetime
@@ -220,8 +220,6 @@ with open(sys.argv[2], 'w', newline='') as csvfile:
 
 print(f"Wrote {len(records)} records to {sys.argv[2]}", file=sys.stderr)
 PYTHON_EOF
-
-python3 - "$TEMP_FILE" "$OUTPUT_FILE"
 
 echo ""
 echo "Export complete!"

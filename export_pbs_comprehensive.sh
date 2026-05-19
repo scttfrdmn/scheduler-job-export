@@ -150,7 +150,7 @@ echo ""
 echo "Parsing accounting records..."
 
 # Parse PBS accounting logs
-python3 << 'PYTHON_EOF'
+python3 - "${ACCT_FILES[@]}" "$OUTPUT_FILE" << 'PYTHON_EOF'
 import sys
 import csv
 import os
@@ -476,8 +476,6 @@ if [ $VALIDATION_FAILED -eq 1 ]; then
 fi
 
 echo "✓ All accounting files validated"
-
-python3 - "${ACCT_FILES[@]}" "$OUTPUT_FILE"
 
 echo ""
 echo "================================================================"

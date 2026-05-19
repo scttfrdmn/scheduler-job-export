@@ -38,7 +38,7 @@ bhist -C "$START_DATE,${END_DATE}" -l -a > "$TEMP_FILE"
 echo "Parsing LSF output into CSV format..."
 
 # Parse bhist output into CSV
-python3 << 'PYTHON_EOF'
+python3 - "$TEMP_FILE" "$OUTPUT_FILE" << 'PYTHON_EOF'
 import sys
 import csv
 import re
@@ -157,8 +157,6 @@ with open(sys.argv[2], 'w', newline='') as csvfile:
 
 print(f"Parsed {len(records)} job records", file=sys.stderr)
 PYTHON_EOF
-
-python3 - "$TEMP_FILE" "$OUTPUT_FILE"
 
 echo ""
 echo "Export complete!"

@@ -52,7 +52,7 @@ if [ ! -d "$ACCT_DIR" ]; then
 fi
 
 # Parse accounting logs
-python3 << 'PYTHON_EOF'
+python3 - "$ACCT_DIR" "$START_DATE" "$END_DATE" "$OUTPUT_FILE" << 'PYTHON_EOF'
 import sys
 import csv
 import os
@@ -174,8 +174,6 @@ with open(output_file, 'w', newline='') as csvfile:
 
 print(f"Wrote {len(records)} records to {output_file}", file=sys.stderr)
 PYTHON_EOF
-
-python3 - "$ACCT_DIR" "$START_DATE" "$END_DATE" "$OUTPUT_FILE"
 
 echo ""
 echo "Export complete!"

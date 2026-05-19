@@ -63,7 +63,7 @@ echo ""
 echo "Parsing qhost output into CSV format..."
 
 # Parse qhost output into CSV
-python3 << 'PYTHON_EOF'
+python3 - "$USE_XML" "$TEMP_XML" "$TEMP_TEXT" "$OUTPUT_FILE" << 'PYTHON_EOF'
 import sys
 import csv
 import re
@@ -244,15 +244,13 @@ with open(output_file, 'w', newline='') as csvfile:
 print(f"Wrote {len(hosts)} hosts to {output_file}", file=sys.stderr)
 PYTHON_EOF
 
-python3 - "$USE_XML" "$TEMP_XML" "$TEMP_TEXT" "$OUTPUT_FILE"
-
 echo ""
 echo "================================================================"
 echo "UGE/SGE CLUSTER CONFIGURATION SUMMARY"
 echo "================================================================"
 
 # Calculate summary statistics
-python3 << 'PYTHON_EOF'
+python3 - "$OUTPUT_FILE" << 'PYTHON_EOF'
 import csv
 import sys
 
@@ -308,8 +306,6 @@ if arch_counts:
 
 print("="*80)
 PYTHON_EOF
-
-python3 - "$OUTPUT_FILE"
 
 echo ""
 echo "================================================================"

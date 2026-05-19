@@ -67,7 +67,7 @@ sacct -a \
 echo "Converting to standardized CSV format..."
 
 # Convert pipe-separated sacct output to standardized comma-separated CSV
-python3 << 'PYTHON_EOF'
+python3 - "$TEMP_FILE" "$OUTPUT_FILE" << 'PYTHON_EOF'
 import sys
 import csv
 import re

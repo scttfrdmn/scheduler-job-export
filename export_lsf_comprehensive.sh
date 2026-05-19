@@ -91,7 +91,7 @@ echo ""
 echo "Parsing LSF output into standardized CSV format..."
 
 # Parse bhist output into CSV
-python3 << 'PYTHON_EOF'
+python3 - "$TEMP_FILE" "$BACCT_FILE" "$OUTPUT_FILE" "$HAVE_BACCT" << 'PYTHON_EOF'
 import sys
 import csv
 import re
@@ -378,8 +378,6 @@ if dates_with_jobs:
 
 print(file=sys.stderr)
 PYTHON_EOF
-
-python3 - "$TEMP_FILE" "$BACCT_FILE" "$OUTPUT_FILE" "$HAVE_BACCT"
 
 echo ""
 echo "================================================================"

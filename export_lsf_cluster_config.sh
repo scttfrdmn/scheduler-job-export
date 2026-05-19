@@ -58,7 +58,7 @@ echo ""
 echo "Parsing LSF host data into CSV format..."
 
 # Parse LSF output into CSV
-python3 << 'PYTHON_EOF'
+python3 - "$TEMP_BHOSTS" "$TEMP_LSHOSTS" "$TEMP_BHOSTS_DETAIL" "$OUTPUT_FILE" << 'PYTHON_EOF'
 import sys
 import csv
 import re
@@ -181,15 +181,13 @@ with open(output_file, 'w', newline='') as csvfile:
 print(f"Wrote {len(hosts)} hosts to {output_file}", file=sys.stderr)
 PYTHON_EOF
 
-python3 - "$TEMP_BHOSTS" "$TEMP_LSHOSTS" "$TEMP_BHOSTS_DETAIL" "$OUTPUT_FILE"
-
 echo ""
 echo "================================================================"
 echo "LSF CLUSTER CONFIGURATION SUMMARY"
 echo "================================================================"
 
 # Calculate summary statistics
-python3 << 'PYTHON_EOF'
+python3 - "$OUTPUT_FILE" << 'PYTHON_EOF'
 import csv
 import sys
 
@@ -254,8 +252,6 @@ if len(type_counts) > 1 or 'unknown' not in type_counts:
 
 print("="*80)
 PYTHON_EOF
-
-python3 - "$OUTPUT_FILE"
 
 echo ""
 echo "================================================================"

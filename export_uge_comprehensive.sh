@@ -158,7 +158,7 @@ echo ""
 echo "Parsing qacct output into standardized CSV format..."
 
 # Parse qacct output into CSV
-python3 << 'PYTHON_EOF'
+python3 - "$TEMP_FILE" "$PE_CONFIG_FILE" "$OUTPUT_FILE" << 'PYTHON_EOF'
 import sys
 import csv
 import re
@@ -484,8 +484,6 @@ if dates_with_jobs:
 
 print(file=sys.stderr)
 PYTHON_EOF
-
-python3 - "$TEMP_FILE" "$PE_CONFIG_FILE" "$OUTPUT_FILE"
 
 echo ""
 echo "================================================================"

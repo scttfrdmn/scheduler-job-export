@@ -230,7 +230,7 @@ detect_injection_attempt() {
     fi
 
     # Newlines or carriage returns (potential log injection)
-    if [[ "$input" =~ $'\n'|$'\r' ]]; then
+    if [[ "$input" =~ $'\n' ]] || [[ "$input" =~ $'\r' ]]; then
         return 0  # Detected
     fi
 

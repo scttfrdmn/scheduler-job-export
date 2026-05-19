@@ -40,7 +40,7 @@ qacct -b "$START_DATE" -e "$END_DATE" > "$TEMP_FILE"
 echo "Parsing accounting data into CSV format..."
 
 # Parse qacct output into CSV
-python3 << 'PYTHON_EOF'
+python3 - "$TEMP_FILE" "$OUTPUT_FILE" << 'PYTHON_EOF'
 import sys
 import csv
 from datetime import datetime
@@ -122,8 +122,6 @@ with open(sys.argv[2], 'w', newline='') as csvfile:
 
 print(f"Parsed {len(records)} job records", file=sys.stderr)
 PYTHON_EOF
-
-python3 - "$TEMP_FILE" "$OUTPUT_FILE"
 
 echo ""
 echo "Export complete!"

@@ -33,7 +33,7 @@ echo "Cluster configuration exported!"
 echo ""
 
 # Calculate summary statistics
-python3 << 'PYTHON_EOF'
+python3 - "$OUTPUT_FILE" << 'PYTHON_EOF'
 import csv
 import sys
 
@@ -111,8 +111,6 @@ for part, stats in sorted(partitions.items()):
 print()
 print("="*80)
 PYTHON_EOF
-
-python3 - "$OUTPUT_FILE"
 
 echo ""
 echo "Configuration details saved to: $OUTPUT_FILE"
