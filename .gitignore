@@ -1,3 +1,6 @@
+# Data directory - contains real cluster data, never commit
+data/
+
 # Data files - Never commit actual cluster data
 *.csv
 *.tsv
