@@ -347,6 +347,7 @@ fieldnames = [
 ]
 
 output_records = []
+sparse_count = 0
 for rec in records:
     # Ensure all fields exist with defaults
     row = {k: rec.get(k, '') for k in fieldnames}
@@ -361,7 +362,16 @@ for rec in records:
     if not row['group']:
         row['group'] = 'unknown'
 
+    # Warn if key timing fields are all empty — likely an unrecognised bhist format
+    if not row['submit_time'] and not row['start_time'] and not row['end_time']:
+        sparse_count += 1
+
     output_records.append(row)
+
+if sparse_count:
+    print(f"Warning: {sparse_count}/{len(output_records)} records have no time fields — "
+          "bhist field names may differ from expected. Check scheduler version.",
+          file=sys.stderr)
 
 with open(output_file, 'w', newline='') as csvfile:
     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)

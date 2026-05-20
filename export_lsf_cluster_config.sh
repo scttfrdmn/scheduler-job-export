@@ -130,9 +130,20 @@ if lshosts_file and lshosts_file != '/dev/null':
         with open(lshosts_file, 'r') as f:
             lines = f.readlines()
 
-        # Detect column count from header to handle LSF 9.x vs 10.x
+        # Detect column layout from header to handle LSF 9.x (7 cols) vs 10.x (9 cols).
+        # Warn on unrecognised layouts so admins know data may be incomplete.
         header_parts = lines[0].split() if lines else []
+        ncols = len(header_parts)
         has_ncores = 'ncores' in [p.lower() for p in header_parts]
+
+        if ncols == 9:
+            print("lshosts: detected LSF 10.x format (9 columns)", file=sys.stderr)
+        elif ncols == 7:
+            print("lshosts: detected LSF 9.x format (7 columns, no ncores/nthreads)", file=sys.stderr)
+        elif ncols > 0:
+            print(f"Warning: lshosts has {ncols} columns — unrecognised layout; "
+                  "CPU/memory data may be incomplete. Expected 7 (LSF 9.x) or 9 (LSF 10.x).",
+                  file=sys.stderr)
 
         for line in lines[1:]:
             parts = line.split()
@@ -147,17 +158,20 @@ if lshosts_file and lshosts_file != '/dev/null':
             # parts[3] = cpuf (CPU factor), skip
 
             if has_ncores and len(parts) >= 9:
-                # LSF 10.1+: ncpus=parts[4], ncores=parts[5], nthreads=parts[6], memory=parts[7]
+                # LSF 10.x: ncpus=parts[4], ncores=parts[5], nthreads=parts[6], memory=parts[7]
                 hosts[hostname]['ncpus'] = parts[4]
                 hosts[hostname]['ncores'] = parts[5]
                 hosts[hostname]['nthreads'] = parts[6]
                 hosts[hostname]['memory_mb'] = str(parse_lshosts_memory(parts[7]))
                 hosts[hostname]['cpus'] = parts[4]
-            else:
+            elif len(parts) >= 7:
                 # LSF 9.x: ncpus=parts[4], memory=parts[5]
                 hosts[hostname]['ncpus'] = parts[4]
                 hosts[hostname]['memory_mb'] = str(parse_lshosts_memory(parts[5]))
                 hosts[hostname]['cpus'] = parts[4]
+            else:
+                print(f"Warning: skipping lshosts row for {hostname} — only {len(parts)} fields",
+                      file=sys.stderr)
 
     except Exception as e:
         print(f"Warning: Could not parse lshosts: {e}", file=sys.stderr)
