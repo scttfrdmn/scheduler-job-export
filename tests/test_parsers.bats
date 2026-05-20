@@ -254,6 +254,67 @@ run_python_block() {
 }
 
 # ---------------------------------------------------------------------------
+# LSF 9.x compatibility: Submit Time, Memory Utilized, Finish Time, Done,
+# space-padded single-digit day dates
+# ---------------------------------------------------------------------------
+
+@test "LSF 9.x parser: handles Submit Time field name" {
+    run_python_block export_lsf_comprehensive.sh 1 \
+        "$FIXTURES/lsf/bhist_l_9x.txt" \
+        /dev/null \
+        "$TMPDIR/lsf_9x_out.csv" \
+        false
+    assert_csv_field "$TMPDIR/lsf_9x_out.csv" 1 submit_time "2024-01-15 10:00:00"
+}
+
+@test "LSF 9.x parser: handles Memory Utilized field name" {
+    run_python_block export_lsf_comprehensive.sh 1 \
+        "$FIXTURES/lsf/bhist_l_9x.txt" \
+        /dev/null \
+        "$TMPDIR/lsf_9x_out.csv" \
+        false
+    # frank's job: Memory Utilized: 28672 MB
+    assert_csv_field "$TMPDIR/lsf_9x_out.csv" 1 mem_used 28672
+}
+
+@test "LSF 9.x parser: handles Finish Time field name" {
+    run_python_block export_lsf_comprehensive.sh 1 \
+        "$FIXTURES/lsf/bhist_l_9x.txt" \
+        /dev/null \
+        "$TMPDIR/lsf_9x_out.csv" \
+        false
+    assert_csv_field "$TMPDIR/lsf_9x_out.csv" 2 end_time "2024-01-01 09:03:45"
+}
+
+@test "LSF 9.x parser: handles Done field name" {
+    run_python_block export_lsf_comprehensive.sh 1 \
+        "$FIXTURES/lsf/bhist_l_9x.txt" \
+        /dev/null \
+        "$TMPDIR/lsf_9x_out.csv" \
+        false
+    assert_csv_field "$TMPDIR/lsf_9x_out.csv" 1 end_time "2024-01-15 12:02:15"
+}
+
+@test "LSF 9.x parser: handles space-padded single-digit day in date" {
+    run_python_block export_lsf_comprehensive.sh 1 \
+        "$FIXTURES/lsf/bhist_l_9x.txt" \
+        /dev/null \
+        "$TMPDIR/lsf_9x_out.csv" \
+        false
+    # grace's job: "Mon Jan  1 09:00:00 2024" — double-space before day
+    assert_csv_field "$TMPDIR/lsf_9x_out.csv" 2 submit_time "2024-01-01 09:00:00"
+}
+
+@test "LSF 9.x parser: parses 2 job records" {
+    run_python_block export_lsf_comprehensive.sh 1 \
+        "$FIXTURES/lsf/bhist_l_9x.txt" \
+        /dev/null \
+        "$TMPDIR/lsf_9x_out.csv" \
+        false
+    assert_csv_rows "$TMPDIR/lsf_9x_out.csv" 2
+}
+
+# ---------------------------------------------------------------------------
 # LSF: export_lsf_cluster_config.sh parser (bhosts + lshosts)
 # ---------------------------------------------------------------------------
 
@@ -292,6 +353,18 @@ run_python_block() {
         /dev/null \
         "$TMPDIR/lsf_config.csv"
     assert_csv_field "$TMPDIR/lsf_config.csv" 1 memory_mb 262144
+}
+
+@test "LSF 9.x cluster config parser: handles 7-column lshosts (no ncores/nthreads)" {
+    run_python_block export_lsf_cluster_config.sh 1 \
+        "$FIXTURES/lsf/bhosts_w.txt" \
+        "$FIXTURES/lsf/lshosts_w_9x.txt" \
+        /dev/null \
+        "$TMPDIR/lsf_config_9x.csv"
+    [ -f "$TMPDIR/lsf_config_9x.csv" ]
+    # gpu-node01: ncpus=32, memory=262144 from 7-col format
+    assert_csv_field "$TMPDIR/lsf_config_9x.csv" 1 cpus 32
+    assert_csv_field "$TMPDIR/lsf_config_9x.csv" 1 memory_mb 262144
 }
 
 # ---------------------------------------------------------------------------

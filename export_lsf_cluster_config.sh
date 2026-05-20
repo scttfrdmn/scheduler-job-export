@@ -101,41 +101,64 @@ for line in lines[1:]:
         }
 
 # Parse lshosts -w output if available
-# Format:
-# HOST_NAME   type  model  cpuf  ncpus  ncores  nthreads  memory  swap
-# host1       linux x86_64  20.0  32     16      2        128000  128000
+# LSF 10.1+ format (9 columns):
+#   HOST_NAME  type  model  cpuf  ncpus  ncores  nthreads  memory  swap
+# LSF 9.x format (7 columns, no ncores/nthreads):
+#   HOST_NAME  type  model  cpuf  ncpus  memory  swap
+# Memory is always in MB (integer), though some installs report e.g. "128G".
 
-if lshosts_file:
+def parse_lshosts_memory(value):
+    """Convert lshosts memory field to MB integer. Handles raw MB int or unit suffix."""
+    v = str(value).strip().upper()
+    try:
+        if v.endswith('G'):
+            return int(float(v[:-1]) * 1024)
+        elif v.endswith('T'):
+            return int(float(v[:-1]) * 1024 * 1024)
+        elif v.endswith('K'):
+            return int(float(v[:-1]) / 1024)
+        elif v.endswith('M'):
+            return int(float(v[:-1]))
+        else:
+            return int(v)
+    except (ValueError, TypeError):
+        return 0
+
+if lshosts_file and lshosts_file != '/dev/null':
     print("Parsing lshosts output...", file=sys.stderr)
     try:
         with open(lshosts_file, 'r') as f:
             lines = f.readlines()
 
-        # Skip header
+        # Detect column count from header to handle LSF 9.x vs 10.x
+        header_parts = lines[0].split() if lines else []
+        has_ncores = 'ncores' in [p.lower() for p in header_parts]
+
         for line in lines[1:]:
             parts = line.split()
-            if len(parts) >= 8:
-                hostname = parts[0]
-                if hostname in hosts:
-                    hosts[hostname]['type'] = parts[1]
-                    hosts[hostname]['model'] = parts[2]
-                    hosts[hostname]['ncpus'] = parts[4]
-                    hosts[hostname]['ncores'] = parts[5]
-                    hosts[hostname]['nthreads'] = parts[6]
+            if len(parts) < 6:
+                continue
+            hostname = parts[0]
+            if hostname not in hosts:
+                continue
 
-                    # Memory from lshosts (in MB)
-                    try:
-                        memory = int(parts[7])
-                        hosts[hostname]['memory_mb'] = str(memory)
-                    except:
-                        pass
+            hosts[hostname]['type'] = parts[1]
+            hosts[hostname]['model'] = parts[2]
+            # parts[3] = cpuf (CPU factor), skip
 
-                    # Use ncpus as cpus (more accurate than max_slots)
-                    try:
-                        cpus = int(parts[4])
-                        hosts[hostname]['cpus'] = str(cpus)
-                    except:
-                        pass
+            if has_ncores and len(parts) >= 9:
+                # LSF 10.1+: ncpus=parts[4], ncores=parts[5], nthreads=parts[6], memory=parts[7]
+                hosts[hostname]['ncpus'] = parts[4]
+                hosts[hostname]['ncores'] = parts[5]
+                hosts[hostname]['nthreads'] = parts[6]
+                hosts[hostname]['memory_mb'] = str(parse_lshosts_memory(parts[7]))
+                hosts[hostname]['cpus'] = parts[4]
+            else:
+                # LSF 9.x: ncpus=parts[4], memory=parts[5]
+                hosts[hostname]['ncpus'] = parts[4]
+                hosts[hostname]['memory_mb'] = str(parse_lshosts_memory(parts[5]))
+                hosts[hostname]['cpus'] = parts[4]
+
     except Exception as e:
         print(f"Warning: Could not parse lshosts: {e}", file=sys.stderr)
 

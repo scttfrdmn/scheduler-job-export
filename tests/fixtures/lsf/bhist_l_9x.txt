@@ -1,0 +1,44 @@
+Job <2001>, Job Name <simulate>, User <frank>, Project <proj_d>, Command <mpirun -np 8 sim>
+Mon Jan 15 10:00:00 2024: Submitted from host <login01>, to Queue <normal>, Requested Resources <rusage[mem=32768] span[hosts=1]>;
+Mon Jan 15 10:02:15 2024: Dispatched to <node101>, Effective RES_REQ <rusage[mem=32768]>;
+Mon Jan 15 12:02:15 2024: Completed <done>.
+
+User Group: chemistry
+Queue: normal
+Submit Time: Mon Jan 15 10:00:00 2024
+Started: Mon Jan 15 10:02:15 2024
+Done: Mon Jan 15 12:02:15 2024
+Project Name: proj_d
+Processors Requested: 8 Task(s)
+Requested Resources: rusage[mem=32768] span[hosts=1]
+Execution Hosts: <node101>*8
+Status: DONE
+Exit Code: 0
+Memory Utilized: 28672 MB
+CPU time: 7312.44 sec.
+Run time: 7200 sec.
+
+------------------------------------------------------------------------------
+
+Job <2002>, Job Name <crash>, User <grace>, Project <proj_e>, Command <python bad.py>
+Mon Jan  1 09:00:00 2024: Submitted from host <login02>, to Queue <short>, Requested Resources <rusage[mem=4096]>;
+Mon Jan  1 09:00:45 2024: Dispatched to <node102>, Effective RES_REQ <rusage[mem=4096]>;
+Mon Jan  1 09:03:45 2024: Exited with exit code 1.
+
+User Group: physics
+Queue: short
+Submit Time: Mon Jan  1 09:00:00 2024
+Started: Mon Jan  1 09:00:45 2024
+Finish Time: Mon Jan  1 09:03:45 2024
+Project Name: proj_e
+Processors Requested: 2 Task(s)
+Requested Resources: rusage[mem=4096]
+Execution Hosts: <node102>*2
+Status: EXIT
+Exit Code: 1
+Memory Utilized: 1024 MB
+CPU time: 180.12 sec.
+Run time: 180 sec.
+
+------------------------------------------------------------------------------
+

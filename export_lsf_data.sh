@@ -85,6 +85,20 @@ for line in lines:
                 current_record['job_name'] = value
             elif key == 'Queue':
                 current_record['queue'] = value.split('<')[1].split('>')[0] if '<' in value else value
+            elif key in ['MAX MEM', 'Memory Utilized']:
+                mem_match = re.match(r'([\d.]+)\s*([KMGT])?B?', value.strip())
+                if mem_match:
+                    mem_value = float(mem_match.group(1))
+                    mem_unit = mem_match.group(2) if mem_match.group(2) else 'M'
+                    if mem_unit == 'G':
+                        mem_mb = int(mem_value * 1024)
+                    elif mem_unit == 'K':
+                        mem_mb = int(mem_value / 1024)
+                    elif mem_unit == 'T':
+                        mem_mb = int(mem_value * 1024 * 1024)
+                    else:
+                        mem_mb = int(mem_value)
+                    current_record['mem_used'] = str(mem_mb)
             elif key == 'Processors Requested':
                 match = re.search(r'(\d+)', value)
                 current_record['cpus'] = match.group(1) if match else '1'
@@ -103,32 +117,27 @@ for line in lines:
                     current_record['nodes'] = str(len(set(hosts)))
             elif key == 'Submitted from host':
                 pass  # Not needed
-            elif key in ['Submitted Time', 'Started', 'Completed', 'Dispatched']:
-                # Parse LSF datetime format
-                # Example: "Mon Jan  1 00:00:00 2024"
-                try:
-                    # LSF uses different formats, try to parse
-                    date_str = value.strip()
-                    if date_str and date_str != '-':
-                        # Try common LSF format
+            elif key in ['Submitted Time', 'Submit Time',
+                         'Started', 'Dispatched',
+                         'Completed', 'Finish Time', 'Done']:
+                date_str = re.sub(r'\s+', ' ', value.strip())
+                if date_str and date_str not in ('-', 'Not available', 'Unknown'):
+                    iso_time = None
+                    for fmt in ['%a %b %d %H:%M:%S %Y', '%b %d %H:%M:%S %Y',
+                                '%a %b %d %H:%M %Y',    '%b %d %H:%M %Y',
+                                '%Y/%m/%d %H:%M:%S',    '%Y-%m-%d %H:%M:%S']:
                         try:
-                            dt = datetime.strptime(date_str, '%b %d %H:%M:%S %Y')
-                            iso_time = dt.strftime('%Y-%m-%d %H:%M:%S')
-                        except:
-                            try:
-                                dt = datetime.strptime(date_str, '%a %b %d %H:%M:%S %Y')
-                                iso_time = dt.strftime('%Y-%m-%d %H:%M:%S')
-                            except:
-                                iso_time = date_str
-
-                        if key == 'Submitted Time':
+                            iso_time = datetime.strptime(date_str, fmt).strftime('%Y-%m-%d %H:%M:%S')
+                            break
+                        except ValueError:
+                            continue
+                    if iso_time:
+                        if key in ('Submitted Time', 'Submit Time'):
                             current_record['submit_time'] = iso_time
-                        elif key in ['Started', 'Dispatched']:
+                        elif key in ('Started', 'Dispatched'):
                             current_record['start_time'] = iso_time
-                        elif key == 'Completed':
+                        elif key in ('Completed', 'Finish Time', 'Done'):
                             current_record['end_time'] = iso_time
-                except:
-                    pass
 
 # Add last record
 if current_record:
@@ -138,7 +147,7 @@ if current_record:
 fieldnames = [
     'user', 'group', 'account', 'job_id', 'job_name', 'queue',
     'cpus', 'mem_req', 'nodes', 'nodelist', 'submit_time',
-    'start_time', 'end_time'
+    'start_time', 'end_time', 'mem_used', 'exit_status', 'status'
 ]
 
 with open(sys.argv[2], 'w', newline='') as csvfile:

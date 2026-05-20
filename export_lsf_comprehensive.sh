@@ -204,13 +204,13 @@ for line in lines:
                     if match:
                         current_record['cpus_req'] = match.group(1)
 
-            elif key == 'MAX MEM':
-                # Maximum memory used (in MB or GB)
+            elif key in ['MAX MEM', 'Memory Utilized']:
+                # Maximum memory used — "MAX MEM" (LSF 10.x), "Memory Utilized" (LSF 9.x)
+                # Value formats: "44171 MB", "43.1 GB", "44171MB", "44171"
                 mem_match = re.match(r'([\d.]+)\s*([KMGT])?B?', value.strip())
                 if mem_match:
                     mem_value = float(mem_match.group(1))
                     mem_unit = mem_match.group(2) if mem_match.group(2) else 'M'
-                    # Convert to MB
                     if mem_unit == 'G':
                         mem_mb = int(mem_value * 1024)
                     elif mem_unit == 'K':
@@ -278,32 +278,38 @@ for line in lines:
                     current_record['nodelist'] = ','.join(unique_hosts)
                     current_record['nodes'] = str(len(unique_hosts))
 
-            elif key in ['Submitted Time', 'Started', 'Dispatched', 'Completed', 'Finish Time']:
-                # Parse LSF datetime format
+            elif key in ['Submitted Time', 'Submit Time',
+                         'Started', 'Dispatched',
+                         'Completed', 'Finish Time', 'Done']:
+                # Parse LSF datetime — field names vary by version:
+                #   LSF 9.x: "Submit Time", "Finish Time" or "Done"
+                #   LSF 10.x: "Submitted Time", "Completed"
+                # Date formats:
+                #   "Mon Jan 15 08:00:00 2024"  (weekday + zero-padded day)
+                #   "Mon Jan  1 08:00:00 2024"  (weekday + space-padded day)
+                #   "Jan 15 08:00:00 2024"      (no weekday)
+                #   "Jan  1 08:00:00 2024"      (no weekday, space-padded)
                 date_str = value.strip()
-                if date_str and date_str != '-' and date_str != 'Not available':
-                    try:
-                        # Try common LSF formats
-                        # "Mon Jan  1 00:00:00 2024"
-                        # "Jan  1 00:00 2024"
-                        for fmt in ['%b %d %H:%M:%S %Y', '%a %b %d %H:%M:%S %Y',
-                                   '%b %d %H:%M %Y', '%Y/%m/%d %H:%M:%S']:
-                            try:
-                                dt = datetime.strptime(date_str, fmt)
-                                iso_time = dt.strftime('%Y-%m-%d %H:%M:%S')
-
-                                if key == 'Submitted Time':
-                                    current_record['submit_time'] = iso_time
-                                elif key in ['Started', 'Dispatched']:
-                                    if 'start_time' not in current_record:
-                                        current_record['start_time'] = iso_time
-                                elif key in ['Completed', 'Finish Time']:
-                                    current_record['end_time'] = iso_time
-                                break
-                            except ValueError:
-                                continue
-                    except:
-                        pass
+                if date_str and date_str not in ('-', 'Not available', 'Unknown'):
+                    # Normalise double-space before single-digit day to single space
+                    date_str = re.sub(r'\s+', ' ', date_str)
+                    iso_time = None
+                    for fmt in ['%a %b %d %H:%M:%S %Y', '%b %d %H:%M:%S %Y',
+                                '%a %b %d %H:%M %Y',    '%b %d %H:%M %Y',
+                                '%Y/%m/%d %H:%M:%S',    '%Y-%m-%d %H:%M:%S']:
+                        try:
+                            iso_time = datetime.strptime(date_str, fmt).strftime('%Y-%m-%d %H:%M:%S')
+                            break
+                        except ValueError:
+                            continue
+                    if iso_time:
+                        if key in ('Submitted Time', 'Submit Time'):
+                            current_record['submit_time'] = iso_time
+                        elif key in ('Started', 'Dispatched'):
+                            if 'start_time' not in current_record:
+                                current_record['start_time'] = iso_time
+                        elif key in ('Completed', 'Finish Time', 'Done'):
+                            current_record['end_time'] = iso_time
 
             elif key == 'Status':
                 # Job status: DONE, EXIT, etc.

@@ -1,0 +1,6 @@
+HOST_NAME      type       model        cpuf  ncpus  memory    swap
+gpu-node01     linux      Intel_E5     1.0    32     262144    65536
+gpu-node02     linux      Intel_E5     1.0    32     262144    65536
+bigmem01       linux      AMD_EPYC     1.2    64     2097152   131072
+node101        linux      Intel_E7     1.0    64     262144    65536
+node103        linux      Intel_E5     0.8    40     196608    65536
