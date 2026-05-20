@@ -1,0 +1,16 @@
+FROM rockylinux:8
+
+RUN dnf install -y \
+    bash \
+    python3 \
+    git \
+    npm \
+    && dnf clean all
+
+# Install bats via npm (bats-core package not in RHEL8 default repos)
+RUN npm install -g bats
+
+WORKDIR /repo
+COPY . .
+
+CMD ["bats", "tests/test_validation.bats", "tests/test_parsers.bats", "tests/test_integration.bats"]
