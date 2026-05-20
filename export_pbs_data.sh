@@ -60,12 +60,38 @@ import re
 from datetime import datetime
 from glob import glob
 
+import os
+
 acct_dir = sys.argv[1]
 start_date = sys.argv[2]
 end_date = sys.argv[3]
 output_file = sys.argv[4]
 scheduler = sys.argv[5] if len(sys.argv) > 5 else 'pbs'
 scheduler_version = sys.argv[6] if len(sys.argv) > 6 else 'unknown'
+
+VERBOSE = os.environ.get('VERBOSE', '0') == '1'
+DEBUG   = os.environ.get('DEBUG',   '0') == '1'
+
+def debug_record(job_id, record, fieldnames):
+    empty = [f for f in fieldnames if not record.get(f)]
+    filled = [f for f in fieldnames if record.get(f)]
+    print(f"DEBUG [{scheduler}] job {job_id}: "
+          f"{len(filled)}/{len(fieldnames)} fields populated", file=sys.stderr)
+    if empty:
+        print(f"  Empty: {', '.join(empty)}", file=sys.stderr)
+
+def field_coverage_summary(records, fieldnames):
+    n = len(records)
+    if n == 0:
+        return
+    print(f"\nField coverage ({n} records):", file=sys.stderr)
+    for f in fieldnames:
+        if f in ('scheduler', 'scheduler_version'):
+            continue
+        count = sum(1 for r in records if r.get(f))
+        pct = count * 100 // n
+        flag = ' ← empty' if count == 0 else (' ← partial' if pct < 50 else '')
+        print(f"  {f:25s} {pct:3d}%{flag}", file=sys.stderr)
 
 # Find accounting files in date range
 # PBS accounting files: YYYYMMDD or YYYYMMDD.gz
@@ -160,6 +186,12 @@ for acct_file in acct_files:
                 except:
                     pass
 
+            if DEBUG:
+                debug_record(record['job_id'], record, [
+                    'user', 'group', 'account', 'job_id', 'job_name', 'queue',
+                    'cpus', 'mem_req', 'nodes', 'nodelist', 'submit_time',
+                    'start_time', 'end_time', 'exit_status'
+                ])
             records.append(record)
 
 print(f"Parsed {len(records)} job records", file=sys.stderr)
@@ -171,6 +203,8 @@ fieldnames = [
     'cpus', 'mem_req', 'nodes', 'nodelist', 'submit_time',
     'start_time', 'end_time', 'exit_status'
 ]
+
+field_coverage_summary(records, fieldnames)
 
 with open(output_file, 'w', newline='') as csvfile:
     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)

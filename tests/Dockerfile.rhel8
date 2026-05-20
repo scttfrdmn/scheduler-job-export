@@ -13,4 +13,4 @@ RUN npm install -g bats
 WORKDIR /repo
 COPY . .
 
-CMD ["bats", "tests/test_validation.bats", "tests/test_parsers.bats", "tests/test_integration.bats"]
+CMD ["bats", "tests/test_validation.bats", "tests/test_parsers.bats", "tests/test_integration.bats", "tests/test_debug_modes.bats"]

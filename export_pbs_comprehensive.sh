@@ -148,6 +148,16 @@ fi
 
 echo "Found ${#ACCT_FILES[@]} accounting files"
 echo ""
+
+if [ "${VERBOSE:-0}" = "1" ]; then
+    echo "================================================================" >&2
+    echo "VERBOSE: Accounting files to be parsed:" >&2
+    for f in "${ACCT_FILES[@]}"; do echo "  $f ($(wc -l < "$f") lines)" >&2; done
+    echo "VERBOSE: First 5 lines of first file:" >&2
+    head -5 "${ACCT_FILES[0]}" >&2
+    echo "================================================================" >&2
+fi
+
 echo "Parsing accounting records..."
 
 # Parse PBS accounting logs
@@ -160,10 +170,36 @@ import gzip
 import bz2
 from datetime import datetime
 
+import os
+
 scheduler = sys.argv[1] if len(sys.argv) > 1 else 'pbs'
 scheduler_version = f"{sys.argv[2]} {sys.argv[3]}".strip() if len(sys.argv) > 3 else 'unknown'
 acct_files = sys.argv[4:-1]
 output_file = sys.argv[-1]
+
+VERBOSE = os.environ.get('VERBOSE', '0') == '1'
+DEBUG   = os.environ.get('DEBUG',   '0') == '1'
+
+def debug_record(job_id, record, fieldnames):
+    empty = [f for f in fieldnames if not record.get(f)]
+    filled = [f for f in fieldnames if record.get(f)]
+    print(f"DEBUG [{scheduler}] job {job_id}: "
+          f"{len(filled)}/{len(fieldnames)} fields populated", file=sys.stderr)
+    if empty:
+        print(f"  Empty: {', '.join(empty)}", file=sys.stderr)
+
+def field_coverage_summary(records, fieldnames):
+    n = len(records)
+    if n == 0:
+        return
+    print(f"\nField coverage ({n} records):", file=sys.stderr)
+    for f in fieldnames:
+        if f in ('scheduler', 'scheduler_version'):
+            continue
+        count = sum(1 for r in records if r.get(f))
+        pct = count * 100 // n
+        flag = ' ← empty' if count == 0 else (' ← partial' if pct < 50 else '')
+        print(f"  {f:25s} {pct:3d}%{flag}", file=sys.stderr)
 
 print(f"Processing {len(acct_files)} accounting files...", file=sys.stderr)
 
@@ -388,6 +424,14 @@ for acct_file in acct_files:
                 if not record['cpus_req']:
                     record['cpus_req'] = '1'
 
+                if DEBUG:
+                    debug_record(record['job_id'], record, [
+                        'user', 'group', 'account', 'job_id', 'job_name', 'queue',
+                        'cpus_req', 'mem_req', 'nodes', 'nodelist', 'submit_time',
+                        'start_time', 'end_time', 'exit_status',
+                        'mem_used', 'cpu_time_used', 'walltime_used', 'cpus_alloc'
+                    ])
+
                 records.append(record)
 
     except Exception as e:
@@ -404,6 +448,8 @@ fieldnames = [
     'start_time', 'end_time', 'exit_status',
     'mem_used', 'cpu_time_used', 'walltime_used', 'cpus_alloc'
 ]
+
+field_coverage_summary(records, fieldnames)
 
 with open(output_file, 'w', newline='') as csvfile:
     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)

@@ -62,6 +62,14 @@ condor_history -constraint "CompletionDate > (time() - ($DAYS_AGO * 86400))" \
     CumulativeRemoteUserCpu \
     > "$TEMP_FILE"
 
+if [ "${VERBOSE:-0}" = "1" ]; then
+    echo "================================================================" >&2
+    echo "VERBOSE: Raw condor_history output (first 5 lines):" >&2
+    head -5 "$TEMP_FILE" >&2
+    echo "  ... ($(wc -l < "$TEMP_FILE") total lines)" >&2
+    echo "================================================================" >&2
+fi
+
 echo "Parsing HTCondor output into CSV format..."
 
 # Parse condor_history output into CSV
@@ -70,8 +78,34 @@ import sys
 import csv
 from datetime import datetime
 
+import os
+
 scheduler = sys.argv[3] if len(sys.argv) > 3 else 'htcondor'
 scheduler_version = sys.argv[4] if len(sys.argv) > 4 else 'unknown'
+
+VERBOSE = os.environ.get('VERBOSE', '0') == '1'
+DEBUG   = os.environ.get('DEBUG',   '0') == '1'
+
+def debug_record(job_id, record, fieldnames):
+    empty = [f for f in fieldnames if not record.get(f)]
+    filled = [f for f in fieldnames if record.get(f)]
+    print(f"DEBUG [{scheduler}] job {job_id}: "
+          f"{len(filled)}/{len(fieldnames)} fields populated", file=sys.stderr)
+    if empty:
+        print(f"  Empty: {', '.join(empty)}", file=sys.stderr)
+
+def field_coverage_summary(records, fieldnames):
+    n = len(records)
+    if n == 0:
+        return
+    print(f"\nField coverage ({n} records):", file=sys.stderr)
+    for f in fieldnames:
+        if f in ('scheduler', 'scheduler_version'):
+            continue
+        count = sum(1 for r in records if r.get(f))
+        pct = count * 100 // n
+        flag = ' ← empty' if count == 0 else (' ← partial' if pct < 50 else '')
+        print(f"  {f:25s} {pct:3d}%{flag}", file=sys.stderr)
 
 # Read condor_history tab-separated output
 records = []
@@ -219,6 +253,13 @@ with open(sys.argv[1], 'r') as f:
             'walltime_used': walltime_used,
             'priority': priority,
         }
+        if DEBUG:
+            debug_record(record['job_id'], record, [
+                'user', 'group', 'account', 'job_id', 'job_name', 'queue',
+                'cpus_req', 'mem_req', 'gpu_req', 'nodes', 'nodelist',
+                'submit_time', 'start_time', 'end_time', 'exit_status',
+                'status', 'mem_used', 'cpu_time_used', 'walltime_used', 'priority'
+            ])
         records.append(record)
 
 print(f"Parsed {len(records)} job records", file=sys.stderr)
@@ -231,6 +272,8 @@ fieldnames = [
     'start_time', 'end_time', 'exit_status', 'status', 'mem_used',
     'cpu_time_used', 'walltime_used', 'priority'
 ]
+
+field_coverage_summary(records, fieldnames)
 
 with open(sys.argv[2], 'w', newline='') as csvfile:
     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)

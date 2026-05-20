@@ -144,6 +144,7 @@ echo ""
 # -j for all jobs (optional job ID filter)
 
 qacct -b "$START_DATE" -e "$END_DATE" > "$TEMP_FILE" 2>&1 || {
+
     echo "ERROR: qacct query failed"
     echo ""
     echo "Common issues:"
@@ -156,6 +157,15 @@ qacct -b "$START_DATE" -e "$END_DATE" > "$TEMP_FILE" 2>&1 || {
 }
 
 echo ""
+
+if [ "${VERBOSE:-0}" = "1" ]; then
+    echo "================================================================" >&2
+    echo "VERBOSE: Raw qacct output (first 30 lines):" >&2
+    head -30 "$TEMP_FILE" >&2
+    echo "  ... ($(wc -l < "$TEMP_FILE") total lines)" >&2
+    echo "================================================================" >&2
+fi
+
 echo "Parsing qacct output into standardized CSV format..."
 
 # Parse qacct output into CSV
@@ -165,11 +175,37 @@ import csv
 import re
 from datetime import datetime
 
+import os
+
 temp_file = sys.argv[1]
 pe_config_file = sys.argv[2]
 output_file = sys.argv[3]
 scheduler = sys.argv[4] if len(sys.argv) > 4 else 'uge'
 scheduler_version = f"{sys.argv[5]} {sys.argv[6]}".strip() if len(sys.argv) > 6 else 'unknown'
+
+VERBOSE = os.environ.get('VERBOSE', '0') == '1'
+DEBUG   = os.environ.get('DEBUG',   '0') == '1'
+
+def debug_record(job_id, record, fieldnames):
+    empty = [f for f in fieldnames if not record.get(f)]
+    filled = [f for f in fieldnames if record.get(f)]
+    print(f"DEBUG [{scheduler}] job {job_id}: "
+          f"{len(filled)}/{len(fieldnames)} fields populated", file=sys.stderr)
+    if empty:
+        print(f"  Empty: {', '.join(empty)}", file=sys.stderr)
+
+def field_coverage_summary(records, fieldnames):
+    n = len(records)
+    if n == 0:
+        return
+    print(f"\nField coverage ({n} records):", file=sys.stderr)
+    for f in fieldnames:
+        if f in ('scheduler', 'scheduler_version'):
+            continue
+        count = sum(1 for r in records if r.get(f))
+        pct = count * 100 // n
+        flag = ' ← empty' if count == 0 else (' ← partial' if pct < 50 else '')
+        print(f"  {f:25s} {pct:3d}%{flag}", file=sys.stderr)
 
 # Read PE configurations
 pe_configs = {}
@@ -453,7 +489,12 @@ for rec in records:
     if not row['group']:
         row['group'] = 'unknown'
 
+    if DEBUG:
+        debug_record(row['job_id'], row, fieldnames)
+
     output_records.append(row)
+
+field_coverage_summary(output_records, fieldnames)
 
 with open(output_file, 'w', newline='') as csvfile:
     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)

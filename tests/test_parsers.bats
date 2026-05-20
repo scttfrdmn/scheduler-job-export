@@ -12,25 +12,7 @@ teardown() {
     rm -rf "$TMPDIR"
 }
 
-# ---------------------------------------------------------------------------
-# Helper: extract and run a numbered Python block from a script
-# Some scripts have multiple blocks; block_num selects which (1-based).
-# ---------------------------------------------------------------------------
-run_python_block() {
-    local script="$1"
-    local block_num="${2:-1}"
-    shift 2
-    local py_tmp="$TMPDIR/parser_${block_num}.py"
-
-    # Extract the Nth python3 - ... << 'PYTHON_EOF' block
-    awk -v target="$block_num" '
-        /^python3 - / { count++; if (count == target) { found=1; next } }
-        found && /^PYTHON_EOF/ { exit }
-        found { print }
-    ' "$REPO_ROOT/$script" > "$py_tmp"
-
-    python3 "$py_tmp" "$@"
-}
+# run_python_block is defined in helpers.bash
 
 # ---------------------------------------------------------------------------
 # SLURM: export_with_users.sh parser

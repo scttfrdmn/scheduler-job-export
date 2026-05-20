@@ -501,12 +501,89 @@ export LC_ALL=en_US.UTF-8
 ./export_with_users.sh
 ```
 
-### Verbose Debugging
+### Verbose and Debug Modes
+
+All export scripts support two environment variable flags that help diagnose
+field-mapping problems without modifying any files.
+
+#### Field Coverage Summary (always on)
+
+Every script prints a field coverage table to stderr after parsing, showing
+what percentage of records have each column populated:
+
+```
+Field coverage (47 records):
+  user                       100%
+  group                      100%
+  submit_time                100%
+  mem_used                     0% ← empty
+  cpu_time_used               42% ← partial
+  ...
+```
+
+Columns marked `← empty` mean the field was never populated — likely a
+scheduler version mismatch (e.g. LSF 9.x `Memory Utilized` vs 10.x `MAX MEM`).
+Columns marked `← partial` were populated for some records but not others.
+
+#### VERBOSE=1 — Raw Scheduler Output
+
+Prints the first lines of raw scheduler command output to stderr before
+parsing, so you can see exactly what the command returned on that machine:
 
 ```bash
-# Enable verbose error messages
+VERBOSE=1 ./export_with_users.sh 2024-01-01 2024-12-31
+VERBOSE=1 ./export_lsf_comprehensive.sh 2024/01/01 2024/12/31
 VERBOSE=1 ./export_pbs_comprehensive.sh 20240101 20241231
+VERBOSE=1 ./export_uge_comprehensive.sh 01/01/2024 12/31/2024
+VERBOSE=1 ./export_htcondor_data.sh 365
 ```
+
+Example output:
+
+```
+================================================================
+VERBOSE: Raw bhist output (first 20 lines):
+Job <1001>, Job Name <train>, User <alice>, ...
+Mon Jan 15 08:00:00 2024: Submitted from host <login01>...
+  ... (12847 total lines)
+================================================================
+```
+
+This immediately shows whether the scheduler command is returning data
+at all, and what format the field names are in — critical for diagnosing
+LSF/UGE version mismatches.
+
+#### DEBUG=1 — Per-Record Field Trace
+
+Prints a line for every parsed record showing how many fields were populated
+and which ones are empty:
+
+```bash
+DEBUG=1 ./export_lsf_comprehensive.sh 2024/01/01 2024/12/31 2>&1 | head -40
+```
+
+Example output:
+
+```
+DEBUG [lsf] job 1001: 18/22 fields populated
+  Empty: mem_used, cpu_time_used, walltime_used, qos
+DEBUG [lsf] job 1002: 15/22 fields populated
+  Empty: mem_used, cpu_time_used, walltime_used, qos, start_time, end_time, exit_status
+```
+
+Empty `start_time`/`end_time` on every record means the date field names
+don't match your LSF version — combine with `VERBOSE=1` to see the actual
+field names in the raw output.
+
+#### Combining modes
+
+```bash
+# Most informative for diagnosing a new site
+VERBOSE=1 DEBUG=1 ./export_lsf_comprehensive.sh 2024/01/01 2024/01/02 2>&1 | tee debug.log
+```
+
+Both flags can be used together. The output goes to stderr so it doesn't
+contaminate the CSV. Redirect with `2>&1 | tee debug.log` to capture it.
 
 ---
 

@@ -8,6 +8,28 @@ load_validation() {
     source "$REPO_ROOT/validation.sh"
 }
 
+# Extract and run the Nth Python block from an export script.
+# Supports optional env var prefix (e.g. DEBUG=1 VERBOSE=1).
+# Usage: run_python_block <script> <block_num> [args...]
+run_python_block() {
+    local script="$1"
+    local block_num="${2:-1}"
+    shift 2
+    local py_tmp
+    py_tmp=$(mktemp /tmp/bats_parser_XXXXXX.py)
+
+    awk -v target="$block_num" '
+        /^python3 - / { count++; if (count == target) { found=1; next } }
+        found && /^PYTHON_EOF/ { exit }
+        found { print }
+    ' "$REPO_ROOT/$script" > "$py_tmp"
+
+    python3 "$py_tmp" "$@"
+    local rc=$?
+    rm -f "$py_tmp"
+    return $rc
+}
+
 # Run a Python heredoc block extracted from an export script directly,
 # passing fixture files in place of real scheduler output.
 # Usage: run_python_parser <script> <fixture_file> [extra_args...]

@@ -68,6 +68,14 @@ sacct -a \
   --parsable2 \
   > "$TEMP_FILE"
 
+if [ "${VERBOSE:-0}" = "1" ]; then
+    echo "================================================================" >&2
+    echo "VERBOSE: Raw sacct output (first 5 lines):" >&2
+    head -5 "$TEMP_FILE" >&2
+    echo "  ... ($(wc -l < "$TEMP_FILE") total lines)" >&2
+    echo "================================================================" >&2
+fi
+
 echo "Converting to standardized CSV format..."
 
 # Convert pipe-separated sacct output to standardized comma-separated CSV
@@ -76,10 +84,38 @@ import sys
 import csv
 import re
 
+import os
+
 temp_file = sys.argv[1]
 output_file = sys.argv[2]
 scheduler = sys.argv[3] if len(sys.argv) > 3 else 'slurm'
 scheduler_version = sys.argv[4] if len(sys.argv) > 4 else 'unknown'
+
+VERBOSE = os.environ.get('VERBOSE', '0') == '1'
+DEBUG   = os.environ.get('DEBUG',   '0') == '1'
+
+def debug_record(job_id, record, fieldnames):
+    """Print per-record field mapping trace when DEBUG=1."""
+    empty = [f for f in fieldnames if not record.get(f)]
+    filled = [f for f in fieldnames if record.get(f)]
+    print(f"DEBUG [{scheduler}] job {job_id}: "
+          f"{len(filled)}/{len(fieldnames)} fields populated", file=sys.stderr)
+    if empty:
+        print(f"  Empty: {', '.join(empty)}", file=sys.stderr)
+
+def field_coverage_summary(records, fieldnames):
+    """Always-on: print % of records where each column is non-empty."""
+    n = len(records)
+    if n == 0:
+        return
+    print(f"\nField coverage ({n} records):", file=sys.stderr)
+    for f in fieldnames:
+        if f in ('scheduler', 'scheduler_version'):
+            continue
+        count = sum(1 for r in records if r.get(f))
+        pct = count * 100 // n
+        flag = ' ← empty' if count == 0 else (' ← partial' if pct < 50 else '')
+        print(f"  {f:25s} {pct:3d}%{flag}", file=sys.stderr)
 
 with open(temp_file, 'r') as infile:
     # Read sacct output (pipe-separated)
@@ -99,6 +135,11 @@ fieldnames = [
     'partition', 'qos', 'priority', 'reservation',
     'gpu_count', 'gpu_types', 'node_type'
 ]
+
+if VERBOSE:
+    print(f"VERBOSE [{scheduler}]: sacct header fields: {header}", file=sys.stderr)
+
+all_records_for_summary = []
 
 with open(output_file, 'w', newline='') as csvfile:
     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
@@ -317,8 +358,14 @@ with open(output_file, 'w', newline='') as csvfile:
         if not record['nodes']:
             record['nodes'] = '1'
 
+        if DEBUG:
+            debug_record(record['job_id'], record, fieldnames)
+
         writer.writerow(record)
 
+all_records_for_summary.append(record)
+
+field_coverage_summary(all_records_for_summary, fieldnames)
 print(f"Export complete: {output_file}", file=sys.stderr)
 
 PYTHON_EOF

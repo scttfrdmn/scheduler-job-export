@@ -9,6 +9,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 
+## [1.2.5] - 2026-05-19
+
+### Added
+- **All schedulers**: `VERBOSE=1` and `DEBUG=1` environment variable flags for
+  diagnosing field-mapping problems without modifying scripts.
+  - `VERBOSE=1` — prints the first lines of raw scheduler command output
+    (sacct, bhist, qacct, condor_history, PBS accounting files) to stderr
+    before parsing, so you can immediately see what the scheduler returned
+    and in what format.
+  - `DEBUG=1` — prints a per-record field trace to stderr showing how many
+    fields were populated and which ones are empty for every parsed job.
+  - **Field coverage summary** (always on, no flag needed) — after every
+    export, prints a table showing what percentage of records have each
+    column populated. Columns at 0% are flagged `← empty`; columns below
+    50% are flagged `← partial`. Surfaces silent field-name mismatches
+    (e.g. LSF 9.x vs 10.x) without requiring debug mode.
+- **README**: New "Verbose and Debug Modes" section under Troubleshooting
+  documenting all three diagnostic features with example output and
+  guidance on combining modes.
+- **21 new tests** in `tests/test_debug_modes.bats` covering field coverage
+  summary, VERBOSE output, DEBUG trace, and correctness of CSV output when
+  both modes are enabled.
+- `run_python_block` helper moved to `tests/helpers.bash` so it is available
+  to all test files (was previously only in `test_parsers.bats`).
+
 ## [1.2.4] - 2026-05-19
 
 ### Fixed
