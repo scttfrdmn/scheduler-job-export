@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 
+## [1.2.4] - 2026-05-19
+
+### Fixed
+- **LSF**: `lshosts -w` parser now logs the detected column layout (7-col LSF 9.x,
+  9-col LSF 10.x) and emits a `Warning` to stderr if the count is neither, naming
+  the host — previously silently wrote wrong or empty CPU/memory values.
+- **LSF**: `bhist -l` parser counts records where all time fields (submit, start, end)
+  are empty after parsing and warns with a count and suggested cause (field names
+  differ from expected LSF version). Previously produced a valid-looking CSV where
+  every time column was blank with no indication of why.
+
 ## [1.2.3] - 2026-05-19
 
 ### Added
