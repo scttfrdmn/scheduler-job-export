@@ -15,8 +15,36 @@ echo ""
 CHECKS_PASSED=0
 CHECKS_FAILED=0
 
-# Run tests
-echo "Step 1: Running test harness..."
+# Run unit/integration tests (bats)
+echo "Step 1: Running bats unit tests..."
+echo "================================================================"
+echo ""
+
+if command -v bats &> /dev/null; then
+    if bats tests/; then
+        echo ""
+        echo "✓ Unit tests passed"
+        CHECKS_PASSED=$((CHECKS_PASSED + 1))
+    else
+        echo ""
+        echo "✗ Unit tests failed"
+        CHECKS_FAILED=$((CHECKS_FAILED + 1))
+    fi
+else
+    echo "⊘ Skipping bats unit tests (not installed)"
+    echo ""
+    echo "To install bats:"
+    echo "  brew install bats-core        # macOS"
+    echo "  apt-get install bats          # Ubuntu/Debian"
+    echo "  npm install -g bats           # via npm"
+    echo ""
+fi
+
+echo ""
+echo ""
+
+# Run legacy test harness
+echo "Step 2: Running test harness..."
 echo "================================================================"
 echo ""
 
@@ -34,7 +62,7 @@ echo ""
 echo ""
 
 # Run Python linting (optional - only if ruff is installed)
-echo "Step 2: Running Python linter..."
+echo "Step 3: Running Python linter..."
 echo "================================================================"
 echo ""
 
@@ -62,7 +90,7 @@ echo ""
 echo ""
 
 # Run Bandit Python security scanner (optional)
-echo "Step 3: Running Bandit security scanner..."
+echo "Step 4: Running Bandit security scanner..."
 echo "================================================================"
 echo ""
 
@@ -88,7 +116,7 @@ echo ""
 echo ""
 
 # Run ShellCheck bash linter (optional)
-echo "Step 4: Running ShellCheck linter..."
+echo "Step 5: Running ShellCheck linter..."
 echo "================================================================"
 echo ""
 

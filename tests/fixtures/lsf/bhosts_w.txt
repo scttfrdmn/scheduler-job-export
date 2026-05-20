@@ -1,0 +1,9 @@
+HOST_NAME          STATUS       JL/U    MAX  NJOBS    RUN  SSUSP  USUSP    RSV
+gpu-node01         ok           -        32     16     14      0      2      0
+gpu-node02         ok           -        32      8      6      0      2      0
+gpu-node03         closed_Adm   -        32      0      0      0      0      0
+bigmem01           ok           -        64      4      4      0      0      0
+node101            ok           -        64      0      0      0      0      0
+node102            ok           -        64     60     60      0      0      0
+node103            unavail      -        40      0      0      0      0      0
+login01            ok           1        16      1      1      0      0      0

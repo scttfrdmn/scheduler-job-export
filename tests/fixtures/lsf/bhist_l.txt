@@ -1,0 +1,79 @@
+Job <1001>, Job Name <train_model>, User <alice>, Project <proj_a>, Application <default>, Command <python train.py>
+Mon Jan 15 08:00:00 2024: Submitted from host <login01>, to Queue <gpu>, CWD <$HOME/work>, Requested Resources <rusage[mem=65536,duration=1h] span[hosts=1]>;
+Mon Jan 15 08:05:12 2024: Dispatched to <gpu-node01>, Effective RES_REQ <select[type==local] order[r15s:pg] rusage[mem=65536]>;
+Mon Jan 15 10:20:30 2024: Completed <done>.
+
+ SCHEDULING PARAMETERS:
+           r15s   r1m  r15m   ut      pg    io   ls    it    tmp    swp    mem
+ loadSched   -     -     -     -       -     -    -     -     -      -      -
+ loadStop    -     -     -     -       -     -    -     -     -      -      -
+
+ RESOURCE USAGE:
+ Total CPU time consumed:   8134.22 sec.
+ Total wait time in queues: 312 sec.
+ Total turnaround time (CPU time + wait): 8446.22 sec.
+ Average CPU time:          8134.22 sec.
+ Average wait time:         312 sec.
+ Maximum number of hosts: 1
+
+User Group: physics
+Queue: gpu
+Submitted Time: Mon Jan 15 08:00:00 2024
+Started: Mon Jan 15 08:05:12 2024
+Completed: Mon Jan 15 10:20:30 2024
+Project Name: proj_a
+Processors Requested: 16 Task(s)
+Requested Resources: rusage[mem=65536,duration=1h] span[hosts=1]
+Execution Hosts: <gpu-node01>*16
+Status: DONE
+Exit Code: 0
+MAX MEM: 44171 MB
+CPU time: 8134.22 sec.
+Run time: 8118 sec.
+
+------------------------------------------------------------------------------
+
+Job <1002>, Job Name <inference>, User <bob>, Project <proj_b>, Application <default>, Command <python infer.py>
+Mon Jan 15 09:00:00 2024: Submitted from host <login01>, to Queue <gpu>, CWD <$HOME/work>, Requested Resources <rusage[mem=16384,duration=30m] span[hosts=1]>;
+Mon Jan 15 09:01:05 2024: Dispatched to <gpu-node02>, Effective RES_REQ <select[type==local] order[r15s:pg] rusage[mem=16384]>;
+Mon Jan 15 09:06:17 2024: Exited with exit code 1.
+
+User Group: chemistry
+Queue: gpu
+Submitted Time: Mon Jan 15 09:00:00 2024
+Started: Mon Jan 15 09:01:05 2024
+Completed: Mon Jan 15 09:06:17 2024
+Project Name: proj_b
+Processors Requested: 4 Task(s)
+Requested Resources: rusage[mem=16384,duration=30m] span[hosts=1]
+Execution Hosts: <gpu-node02>*4
+Status: EXIT
+Exit Code: 1
+MAX MEM: 8000 MB
+CPU time: 298.15 sec.
+Run time: 312 sec.
+
+------------------------------------------------------------------------------
+
+Job <1003>, Job Name <bigmem_job>, User <carol>, Project <proj_c>, Application <default>, Command <R --no-save < analysis.R>
+Mon Jan 15 07:30:00 2024: Submitted from host <login02>, to Queue <normal>, CWD <$HOME/data>, Requested Resources <rusage[mem=131072] span[hosts=1]>;
+Mon Jan 15 07:35:00 2024: Dispatched to <bigmem01>, Effective RES_REQ <select[type==local] order[r15s:pg] rusage[mem=131072]>;
+Mon Jan 15 09:05:00 2024: Completed <done>.
+
+User Group: biology
+Queue: normal
+Submitted Time: Mon Jan 15 07:30:00 2024
+Started: Mon Jan 15 07:35:00 2024
+Completed: Mon Jan 15 09:05:00 2024
+Project Name: proj_c
+Processors Requested: 8 Task(s)
+Requested Resources: rusage[mem=131072] span[hosts=1]
+Execution Hosts: <bigmem01>*8
+Status: DONE
+Exit Code: 0
+MAX MEM: 98304 MB
+CPU time: 5380.44 sec.
+Run time: 5400 sec.
+
+------------------------------------------------------------------------------
+

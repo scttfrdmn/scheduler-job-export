@@ -1,0 +1,62 @@
+gpu-node01
+     Mom = gpu-node01.cluster.example.edu
+     ntype = PBS
+     state = job-exclusive
+     pcpus = 32
+     resources_available.mem = 262144mb
+     resources_available.ncpus = 32
+     resources_available.ngpus = 4
+     resources_available.arch = linux
+     resources_available.host = gpu-node01
+     resources_assigned.mem = 262144mb
+     resources_assigned.ncpus = 32
+     resources_assigned.ngpus = 4
+
+node101
+     Mom = node101.cluster.example.edu
+     ntype = PBS
+     state = free
+     pcpus = 64
+     resources_available.mem = 262144mb
+     resources_available.ncpus = 64
+     resources_available.arch = linux
+     resources_available.host = node101
+     resources_assigned.mem = 0kb
+     resources_assigned.ncpus = 0
+
+node102
+     Mom = node102.cluster.example.edu
+     ntype = PBS
+     state = job-exclusive
+     pcpus = 64
+     resources_available.mem = 262144mb
+     resources_available.ncpus = 64
+     resources_available.arch = linux
+     resources_available.host = node102
+     resources_assigned.mem = 131072mb
+     resources_assigned.ncpus = 32
+
+bigmem01
+     Mom = bigmem01.cluster.example.edu
+     ntype = PBS
+     state = job-exclusive
+     pcpus = 64
+     resources_available.mem = 2097152mb
+     resources_available.ncpus = 64
+     resources_available.arch = linux
+     resources_available.host = bigmem01
+     resources_assigned.mem = 524288mb
+     resources_assigned.ncpus = 64
+
+node103
+     Mom = node103.cluster.example.edu
+     ntype = PBS
+     state = offline
+     pcpus = 40
+     resources_available.mem = 196608mb
+     resources_available.ncpus = 40
+     resources_available.arch = linux
+     resources_available.host = node103
+     resources_assigned.mem = 0kb
+     resources_assigned.ncpus = 0
+

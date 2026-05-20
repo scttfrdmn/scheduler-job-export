@@ -1,0 +1,7 @@
+Owner	AcctGroup	AccountingGroup	ClusterId	ProcId	JobStatus	JobPrio	RequestCpus	RequestMemory	NumJobStarts	LastRemoteHost	QDate	JobStartDate	CompletionDate	ExitCode	MemoryUsage	RemoteSysCpu	RemoteUserCpu	RemoteWallClockTime	CumulativeRemoteSysCpu	CumulativeRemoteUserCpu
+alice	physics	physics.alice	1001	0	4	0	16	65536	1	slot1@gpu-node01.cluster.example.edu	1705305600	1705305912	1705313430	0	45231	200	7934	8118	200	7934
+bob	chemistry	chemistry.bob	1002	0	4	0	4	16384	1	slot1@gpu-node02.cluster.example.edu	1705309200	1705309265	1705309577	1	8000	18	280	312	18	280
+carol	biology	biology.carol	1003	0	4	0	32	131072	1	slot1@node101.cluster.example.edu	1705308600	1705308900	1705314300	0	98304	180	5200	5400	180	5200
+carol	biology	biology.carol	1003	1	4	0	32	131072	1	slot1@node102.cluster.example.edu	1705308600	1705308900	1705314300	0	96000	175	5100	5400	175	5100
+dave	physics	physics.dave	1004	0	4	0	8	32768	1	slot1@gpu-node01.cluster.example.edu	1705312800	1705312845	1705318245	0	24576	95	5300	5400	95	5300
+eve	biology	biology.eve	1005	0	3	0	4	524288	0		1705309200		0	0	0	0	0	0	0	0

@@ -1,0 +1,8 @@
+User|Group|Account|JobID|JobName|ReqCPUS|ReqMem|NNodes|NodeList|Submit|Start|End|ExitCode|State|MaxRSS|TotalCPU|Elapsed|AllocCPUS|Partition|QOS|Priority|Reservation|AllocTRES
+alice|physics|proj_a|1001|train_model|16|64G|1|gpu001|2024-01-15T08:00:00|2024-01-15T08:05:12|2024-01-15T10:20:30|0:0|COMPLETED|45231600K|02:14:22|02:15:18|16|gpu|gpu-normal|1000||cpu=16,mem=65536M,node=1,gres/gpu=2,gres/gpu:v100=2
+alice|physics|proj_a|1001.batch|batch|16|64G|1|gpu001|2024-01-15T08:05:12|2024-01-15T08:05:12|2024-01-15T10:20:30|0:0|COMPLETED|45231600K|02:14:22|02:15:18|16|gpu|gpu-normal|1000||cpu=16,mem=65536M,node=1,gres/gpu=2,gres/gpu:v100=2
+bob|chemistry|proj_b|1002|inference|4|16G|1|gpu002|2024-01-15T09:00:00|2024-01-15T09:01:05|2024-01-15T09:06:17|1:0|FAILED|8192000K|00:04:58|00:05:12|4|gpu|gpu-normal|800||cpu=4,mem=16384M,node=1,gres/gpu=1,gres/gpu:v100=1
+carol|biology|proj_c|1003|preprocess|32|128G|2|node[101-102]|2024-01-15T07:30:00|2024-01-15T07:35:00|2024-01-15T09:05:00|0:0|COMPLETED|98304000K|1-02:30:00|01:30:00|32|compute|normal|600||cpu=32,mem=131072M,node=2
+dave|physics|proj_a|1004|gpu_multi|8|32G|1|gpu003|2024-01-15T10:00:00|2024-01-15T10:00:45|2024-01-15T11:30:45|0:0|COMPLETED|24576000K|01:28:55|01:30:00|8|gpu|gpu-normal|750||cpu=8,mem=32768M,node=1,gres/gpu=4,gres/gpu:a100=2,gres/gpu:v100=2
+eve|biology|proj_c|1005|mem_job|4|512G|1|bigmem001|2024-01-15T06:00:00|2024-01-15T06:00:30|2024-01-15T07:00:30|0:0|COMPLETED|524288000K|00:59:45|01:00:00|4|highmem|highmem|500||cpu=4,mem=524288M,node=1
+frank|chemistry|proj_b|1006|short_job|2|4G|1|node103|2024-01-15T11:00:00|2024-01-15T11:00:05|2024-01-15T11:00:35|0:0|COMPLETED|512000K|00:00:28|00:00:30|2|compute|normal|400||cpu=2,mem=4096M,node=1

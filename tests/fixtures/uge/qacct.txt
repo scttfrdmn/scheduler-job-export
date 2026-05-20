@@ -1,0 +1,127 @@
+==============================================================
+qname        gpu.q
+hostname     gpu-node01.cluster.example.edu
+group        physics
+owner        alice
+project      proj_a
+department   defaultdepartment
+jobname      train_model
+jobnumber    1001
+taskid       undefined
+account      proj_a
+priority     0
+qsub_time    Mon Jan 15 08:00:00 2024
+start_time   Mon Jan 15 08:05:12 2024
+end_time     Mon Jan 15 10:20:30 2024
+granted_pe   smp
+slots        16
+failed       0
+exit_status  0
+ru_wallclock 8118
+ru_utime     7934.223
+ru_stime     200.001
+ru_maxrss    46137344
+ru_ixrss     0
+ru_ismrss    0
+ru_idrss     0
+ru_isrss     0
+ru_minflt    1234567
+ru_majflt    12
+ru_nswap     0
+ru_inblock   48920
+ru_oublock   31240
+ru_msgsnd    0
+ru_msgrcv    0
+ru_nsignals  0
+ru_nvcsw     89234
+ru_nivcsw    45231
+cpu          8134.224
+mem          52428800.000
+io           1234.567
+iow          0.000
+maxvmem      55834214400.000
+==============================================================
+qname        short.q
+hostname     node101.cluster.example.edu
+group        chemistry
+owner        bob
+project      proj_b
+department   defaultdepartment
+jobname      inference
+jobnumber    1002
+taskid       undefined
+account      proj_b
+priority     0
+qsub_time    Mon Jan 15 09:00:00 2024
+start_time   Mon Jan 15 09:01:05 2024
+end_time     Mon Jan 15 09:06:17 2024
+granted_pe   smp
+slots        4
+failed       0
+exit_status  1
+ru_wallclock 312
+ru_utime     280.120
+ru_stime     18.030
+ru_maxrss    8388608
+ru_ixrss     0
+ru_ismrss    0
+ru_idrss     0
+ru_isrss     0
+ru_minflt    234567
+ru_majflt    5
+ru_nswap     0
+ru_inblock   12340
+ru_oublock   8920
+ru_msgsnd    0
+ru_msgrcv    0
+ru_nsignals  0
+ru_nvcsw     12345
+ru_nivcsw    6789
+cpu          298.150
+mem          2097152.000
+io           234.100
+iow          0.000
+maxvmem      10737418240.000
+==============================================================
+qname        normal.q
+hostname     node102.cluster.example.edu
+group        biology
+owner        carol
+project      proj_c
+department   defaultdepartment
+jobname      preprocess
+jobnumber    1003
+taskid       1
+account      proj_c
+priority     0
+qsub_time    Mon Jan 15 07:30:00 2024
+start_time   Mon Jan 15 07:35:00 2024
+end_time     Mon Jan 15 09:05:00 2024
+granted_pe   mpi
+slots        32
+failed       0
+exit_status  0
+ru_wallclock 5400
+ru_utime     5200.100
+ru_stime     180.344
+ru_maxrss    100663296
+ru_ixrss     0
+ru_ismrss    0
+ru_idrss     0
+ru_isrss     0
+ru_minflt    3456789
+ru_majflt    34
+ru_nswap     0
+ru_inblock   234560
+ru_oublock   123450
+ru_msgsnd    0
+ru_msgrcv    0
+ru_nsignals  0
+ru_nvcsw     234567
+ru_nivcsw    123456
+cpu          5380.444
+mem          161061273600.000
+io           5678.900
+iow          0.000
+maxvmem      107374182400.000
+==============================================================

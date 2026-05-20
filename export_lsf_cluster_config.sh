@@ -169,7 +169,7 @@ print(f"Parsed {len(hosts)} hosts", file=sys.stderr)
 
 # Write CSV
 fieldnames = [
-    'hostname', 'status', 'cpus', 'ncores', 'nthreads',
+    'hostname', 'status', 'cpus', 'ncpus', 'ncores', 'nthreads',
     'memory_mb', 'max_slots', 'type', 'model'
 ]
 

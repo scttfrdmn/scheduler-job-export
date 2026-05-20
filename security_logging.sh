@@ -34,6 +34,10 @@ log_security_event() {
     echo "[$timestamp] [$user] [$script:$pid] [$level] $message" >> "$SECURITY_LOG"
 }
 
+# Convenience wrappers
+log_info() { log_security_event "INFO" "$*"; }
+log_error() { log_security_event "ERROR" "$*"; }
+
 # Log export operation start
 log_export_start() {
     local scheduler="$1"

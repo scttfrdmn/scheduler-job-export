@@ -114,12 +114,14 @@ with open(sys.argv[1], 'r') as f:
             }
             return status_map.get(status_code, status_code)
 
-        # Parse AcctGroup or AccountingGroup for group info
-        # Format is usually "group_name.username"
-        acct_group = rec.get('AcctGroup', rec.get('AccountingGroup', ''))
+        # AccountingGroup (format "group.user") is more reliable for group extraction.
+        # Fall back to AcctGroup if AccountingGroup is absent or lacks a dot.
+        acct_group = rec.get('AccountingGroup', rec.get('AcctGroup', ''))
         group = ''
         if acct_group and '.' in acct_group:
             group = acct_group.split('.')[0]
+        elif rec.get('AcctGroup', '') and '.' not in rec.get('AcctGroup', ''):
+            group = rec.get('AcctGroup', '')
 
         # Extract hostname from LastRemoteHost
         # Format: "slot1@hostname.domain"

@@ -211,7 +211,7 @@ sanitize_input() {
     local input="$1"
     # Keep only: alphanumeric, dash, slash, colon, underscore, dot (for dates/paths)
     # Remove potentially dangerous characters
-    echo "$input" | tr -cd '[:alnum:]/-:_. '
+    echo "$input" | tr -cd '[:alnum:]/:_. -'
 }
 
 # Detect potential injection attempts
@@ -220,22 +220,26 @@ detect_injection_attempt() {
 
     # Check for common injection patterns
     # Command substitution: $(...) or `...`
-    if [[ "$input" =~ \$\(|\` ]]; then
+    if [[ "$input" =~ \$\( ]] || [[ "$input" =~ \` ]]; then
         return 0  # Detected
     fi
 
     # Shell operators: ; | && || > < >> << &
-    if [[ "$input" =~ [;\|\&\>\<] ]]; then
-        return 0  # Detected
-    fi
+    # Use case/glob instead of =~ to avoid bracket-expression portability issues
+    case "$input" in
+        *';'*|*'|'*|*'&'*|*'>'*|*'<'*)
+            return 0 ;;  # Detected
+    esac
 
     # Newlines or carriage returns (potential log injection)
     if [[ "$input" =~ $'\n' ]] || [[ "$input" =~ $'\r' ]]; then
         return 0  # Detected
     fi
 
-    # Null bytes
-    if [[ "$input" =~ $'\0' ]]; then
+    # Null bytes: compare length before and after stripping NUL
+    local stripped
+    stripped=$(printf '%s' "$input" | tr -d '\0')
+    if [ "${#input}" -ne "${#stripped}" ]; then
         return 0  # Detected
     fi
 
