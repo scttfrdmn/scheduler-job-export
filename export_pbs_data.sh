@@ -64,6 +64,8 @@ acct_dir = sys.argv[1]
 start_date = sys.argv[2]
 end_date = sys.argv[3]
 output_file = sys.argv[4]
+scheduler = sys.argv[5] if len(sys.argv) > 5 else 'pbs'
+scheduler_version = sys.argv[6] if len(sys.argv) > 6 else 'unknown'
 
 # Find accounting files in date range
 # PBS accounting files: YYYYMMDD or YYYYMMDD.gz
@@ -123,6 +125,8 @@ for acct_file in acct_files:
 
             # Extract job info
             record = {
+                'scheduler': scheduler,
+                'scheduler_version': scheduler_version,
                 'user': attrs.get('user', ''),
                 'group': attrs.get('group', ''),
                 'account': attrs.get('account', attrs.get('Account_Name', '')),
@@ -162,6 +166,7 @@ print(f"Parsed {len(records)} job records", file=sys.stderr)
 
 # Write CSV
 fieldnames = [
+    'scheduler', 'scheduler_version',
     'user', 'group', 'account', 'job_id', 'job_name', 'queue',
     'cpus', 'mem_req', 'nodes', 'nodelist', 'submit_time',
     'start_time', 'end_time', 'exit_status'

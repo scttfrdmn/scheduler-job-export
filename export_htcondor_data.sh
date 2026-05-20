@@ -21,6 +21,8 @@ if ! command -v condor_history &> /dev/null; then
     exit 1
 fi
 
+CONDOR_VERSION=$(condor_version 2>/dev/null | awk '/CondorVersion/{print $2}' || echo "unknown")
+echo "Detected HTCondor version: $CONDOR_VERSION"
 echo "Querying HTCondor history (this may take several minutes)..."
 
 # Use condor_history to export job history
@@ -45,6 +47,7 @@ condor_history -constraint "CompletionDate > (time() - ($DAYS_AGO * 86400))" \
     JobPrio \
     RequestCpus \
     RequestMemory \
+    RequestGPUs \
     NumJobStarts \
     LastRemoteHost \
     QDate \
@@ -62,10 +65,13 @@ condor_history -constraint "CompletionDate > (time() - ($DAYS_AGO * 86400))" \
 echo "Parsing HTCondor output into CSV format..."
 
 # Parse condor_history output into CSV
-python3 - "$TEMP_FILE" "$OUTPUT_FILE" << 'PYTHON_EOF'
+python3 - "$TEMP_FILE" "$OUTPUT_FILE" "htcondor" "$CONDOR_VERSION" << 'PYTHON_EOF'
 import sys
 import csv
 from datetime import datetime
+
+scheduler = sys.argv[3] if len(sys.argv) > 3 else 'htcondor'
+scheduler_version = sys.argv[4] if len(sys.argv) > 4 else 'unknown'
 
 # Read condor_history tab-separated output
 records = []
@@ -86,16 +92,18 @@ with open(sys.argv[1], 'r') as f:
         rec = dict(zip(header, values))
 
         # Convert HTCondor epoch timestamps to ISO format
+        # CompletionDate == 0 means the job hasn't completed; treat as empty.
         def convert_time(ts_str):
-            if not ts_str or ts_str == 'undefined':
+            if not ts_str or ts_str in ('undefined', '0', ''):
                 return ''
             try:
-                # HTCondor uses Unix epoch
                 ts = int(float(ts_str))
+                if ts <= 0:
+                    return ''
                 dt = datetime.fromtimestamp(ts)
                 return dt.strftime('%Y-%m-%d %H:%M:%S')
             except:
-                return ts_str
+                return ''
 
         # Map HTCondor JobStatus integer to string
         def map_job_status(status_code):
@@ -182,7 +190,14 @@ with open(sys.argv[1], 'r') as f:
         # Get priority value
         priority = rec.get('JobPrio', '')
 
+        # GPU requests — RequestGPUs field (HTCondor 8.9+); undefined on older versions
+        gpu_req = rec.get('RequestGPUs', '')
+        if gpu_req in ('undefined', ''):
+            gpu_req = ''
+
         record = {
+            'scheduler': scheduler,
+            'scheduler_version': scheduler_version,
             'user': rec.get('Owner', ''),
             'group': group,
             'account': acct_group,
@@ -191,6 +206,7 @@ with open(sys.argv[1], 'r') as f:
             'queue': '',  # HTCondor doesn't use queues in same way
             'cpus_req': rec.get('RequestCpus', '1'),
             'mem_req': rec.get('RequestMemory', ''),  # In MB
+            'gpu_req': gpu_req,
             'nodes': '1',  # HTCondor jobs typically run on single node
             'nodelist': nodelist,
             'submit_time': convert_time(rec.get('QDate', '')),
@@ -209,8 +225,9 @@ print(f"Parsed {len(records)} job records", file=sys.stderr)
 
 # Write CSV
 fieldnames = [
+    'scheduler', 'scheduler_version',
     'user', 'group', 'account', 'job_id', 'job_name', 'queue',
-    'cpus_req', 'mem_req', 'nodes', 'nodelist', 'submit_time',
+    'cpus_req', 'mem_req', 'gpu_req', 'nodes', 'nodelist', 'submit_time',
     'start_time', 'end_time', 'exit_status', 'status', 'mem_used',
     'cpu_time_used', 'walltime_used', 'priority'
 ]

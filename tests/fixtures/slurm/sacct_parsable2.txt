@@ -6,3 +6,4 @@ carol|biology|proj_c|1003|preprocess|32|128G|2|node[101-102]|2024-01-15T07:30:00
 dave|physics|proj_a|1004|gpu_multi|8|32G|1|gpu003|2024-01-15T10:00:00|2024-01-15T10:00:45|2024-01-15T11:30:45|0:0|COMPLETED|24576000K|01:28:55|01:30:00|8|gpu|gpu-normal|750||cpu=8,mem=32768M,node=1,gres/gpu=4,gres/gpu:a100=2,gres/gpu:v100=2
 eve|biology|proj_c|1005|mem_job|4|512G|1|bigmem001|2024-01-15T06:00:00|2024-01-15T06:00:30|2024-01-15T07:00:30|0:0|COMPLETED|524288000K|00:59:45|01:00:00|4|highmem|highmem|500||cpu=4,mem=524288M,node=1
 frank|chemistry|proj_b|1006|short_job|2|4G|1|node103|2024-01-15T11:00:00|2024-01-15T11:00:05|2024-01-15T11:00:35|0:0|COMPLETED|512000K|00:00:28|00:00:30|2|compute|normal|400||cpu=2,mem=4096M,node=1
+grace|physics|proj_a|1007|percore_mem|8|2Gc|1|node101|2024-01-15T12:00:00|2024-01-15T12:00:10|2024-01-15T12:30:10|0:0|COMPLETED|4096000K|INVALID|00:30:00|8|compute|normal|350||cpu=8,mem=16384M,node=1

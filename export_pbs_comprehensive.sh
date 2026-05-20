@@ -62,7 +62,8 @@ if command -v qstat &> /dev/null; then
     fi
 fi
 
-echo "Detected PBS variant: $PBS_VARIANT"
+PBS_VERSION=$(qstat --version 2>&1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+[^ ]*' | head -1 || echo "unknown")
+echo "Detected PBS variant: $PBS_VARIANT ($PBS_VERSION)"
 echo ""
 
 # Find accounting directory
@@ -150,7 +151,7 @@ echo ""
 echo "Parsing accounting records..."
 
 # Parse PBS accounting logs
-python3 - "${ACCT_FILES[@]}" "$OUTPUT_FILE" << 'PYTHON_EOF'
+python3 - "pbs" "${PBS_VARIANT}" "${PBS_VERSION}" "${ACCT_FILES[@]}" "$OUTPUT_FILE" << 'PYTHON_EOF'
 import sys
 import csv
 import os
@@ -159,7 +160,9 @@ import gzip
 import bz2
 from datetime import datetime
 
-acct_files = sys.argv[1:-1]
+scheduler = sys.argv[1] if len(sys.argv) > 1 else 'pbs'
+scheduler_version = f"{sys.argv[2]} {sys.argv[3]}".strip() if len(sys.argv) > 3 else 'unknown'
+acct_files = sys.argv[4:-1]
 output_file = sys.argv[-1]
 
 print(f"Processing {len(acct_files)} accounting files...", file=sys.stderr)
@@ -230,6 +233,8 @@ for acct_file in acct_files:
 
                 # Extract standard fields
                 record = {
+                    'scheduler': scheduler,
+                    'scheduler_version': scheduler_version,
                     'user': attrs.get('user', ''),
                     'group': attrs.get('group', ''),
                     'account': attrs.get('account', attrs.get('Account_Name', '')),
@@ -393,6 +398,7 @@ print(f"\nParsed {records_found} job records from {files_processed} files", file
 
 # Write CSV
 fieldnames = [
+    'scheduler', 'scheduler_version',
     'user', 'group', 'account', 'job_id', 'job_name', 'queue',
     'cpus_req', 'mem_req', 'nodes', 'nodelist', 'submit_time',
     'start_time', 'end_time', 'exit_status',

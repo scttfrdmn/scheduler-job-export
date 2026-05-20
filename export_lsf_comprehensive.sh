@@ -44,6 +44,10 @@ echo ""
 # Log export start
 log_export_start "LSF" "start=$START_DATE end=$END_DATE output=$OUTPUT_FILE"
 
+# Detect LSF version for metadata column
+LSF_VERSION=$(lsid 2>/dev/null | awk '/IBM Spectrum LSF|Platform LSF/{print $NF; exit}' || \
+              bhosts -V 2>/dev/null | head -1 || echo "unknown")
+
 # Check if bhist is available
 if ! command -v bhist &> /dev/null; then
     echo "ERROR: bhist command not found. Is LSF installed?"
@@ -91,7 +95,7 @@ echo ""
 echo "Parsing LSF output into standardized CSV format..."
 
 # Parse bhist output into CSV
-python3 - "$TEMP_FILE" "$BACCT_FILE" "$OUTPUT_FILE" "$HAVE_BACCT" << 'PYTHON_EOF'
+python3 - "$TEMP_FILE" "$BACCT_FILE" "$OUTPUT_FILE" "$HAVE_BACCT" "lsf" "$LSF_VERSION" << 'PYTHON_EOF'
 import sys
 import csv
 import re
@@ -102,6 +106,8 @@ temp_file = sys.argv[1]
 bacct_file = sys.argv[2] if len(sys.argv) > 2 else None
 output_file = sys.argv[3]
 have_bacct = sys.argv[4] == 'true' if len(sys.argv) > 4 else False
+scheduler = sys.argv[5] if len(sys.argv) > 5 else 'lsf'
+scheduler_version = sys.argv[6] if len(sys.argv) > 6 else 'unknown'
 
 # Read bhist -l output
 print("Parsing bhist output...", file=sys.stderr)
@@ -332,6 +338,7 @@ if have_bacct and bacct_file:
 
 # Write CSV with standardized columns
 fieldnames = [
+    'scheduler', 'scheduler_version',
     'user', 'group', 'account', 'job_id', 'job_name', 'queue',
     'cpus_req', 'mem_req', 'nodes', 'nodelist', 'submit_time',
     'start_time', 'end_time', 'exit_status', 'status',
@@ -343,6 +350,8 @@ output_records = []
 for rec in records:
     # Ensure all fields exist with defaults
     row = {k: rec.get(k, '') for k in fieldnames}
+    row['scheduler'] = scheduler
+    row['scheduler_version'] = scheduler_version
 
     # Set reasonable defaults
     if not row['cpus_req']:

@@ -55,6 +55,10 @@ echo ""
 # Log export start
 log_export_start "SLURM" "start=$START_DATE end=$END_DATE output=$OUTPUT_FILE"
 
+# Detect SLURM version for metadata column
+SLURM_VERSION=$(sinfo --version 2>/dev/null | awk '{print $NF}' || echo "unknown")
+echo "Detected SLURM version: $SLURM_VERSION"
+
 # Export with sacct (pipe-separated output)
 echo "Querying SLURM accounting database..."
 sacct -a \
@@ -67,13 +71,15 @@ sacct -a \
 echo "Converting to standardized CSV format..."
 
 # Convert pipe-separated sacct output to standardized comma-separated CSV
-python3 - "$TEMP_FILE" "$OUTPUT_FILE" << 'PYTHON_EOF'
+python3 - "$TEMP_FILE" "$OUTPUT_FILE" "slurm" "$SLURM_VERSION" << 'PYTHON_EOF'
 import sys
 import csv
 import re
 
 temp_file = sys.argv[1]
 output_file = sys.argv[2]
+scheduler = sys.argv[3] if len(sys.argv) > 3 else 'slurm'
+scheduler_version = sys.argv[4] if len(sys.argv) > 4 else 'unknown'
 
 with open(temp_file, 'r') as infile:
     # Read sacct output (pipe-separated)
@@ -85,6 +91,7 @@ data_lines = lines[1:]
 
 # Standardized fieldnames matching LSF/PBS/UGE format
 fieldnames = [
+    'scheduler', 'scheduler_version',
     'user', 'group', 'account', 'job_id', 'job_name',
     'cpus_req', 'mem_req', 'nodes', 'nodelist',
     'submit_time', 'start_time', 'end_time', 'exit_status', 'status',
@@ -133,40 +140,35 @@ with open(output_file, 'w', newline='') as csvfile:
                     mem_used_mb = ''
 
         # Parse TotalCPU (format: "days-hours:minutes:seconds" or "hours:minutes:seconds")
-        total_cpu = fields[15] if len(fields) > 15 else ''
-        cpu_seconds = ''
-        if total_cpu:
+        # Guard against "INVALID" or "Unknown" which appear on pre-18.x or misconfigured clusters
+        def parse_slurm_duration(s):
+            if not s or s in ('INVALID', 'Unknown', 'N/A', ''):
+                return ''
             try:
-                # Handle format like "1-02:03:04" (1 day, 2 hours, 3 min, 4 sec)
-                if '-' in total_cpu:
-                    days, hms = total_cpu.split('-')
-                    h, m, s = hms.split(':')
-                    cpu_seconds = str(int(days)*86400 + int(h)*3600 + int(m)*60 + float(s))
+                if '-' in s:
+                    days, hms = s.split('-', 1)
+                    h, m, sec = hms.split(':')
+                    return str(int(days)*86400 + int(h)*3600 + int(m)*60 + float(sec))
                 else:
-                    # Format like "02:03:04"
-                    parts = total_cpu.split(':')
+                    parts = s.split(':')
                     if len(parts) == 3:
-                        h, m, s = parts
-                        cpu_seconds = str(int(h)*3600 + int(m)*60 + float(s))
-            except:
-                cpu_seconds = ''
+                        h, m, sec = parts
+                        return str(int(h)*3600 + int(m)*60 + float(sec))
+            except Exception:
+                pass
+            return ''
 
-        # Parse Elapsed (same format as TotalCPU)
+        total_cpu = fields[15] if len(fields) > 15 else ''
+        cpu_seconds = parse_slurm_duration(total_cpu)
+
         elapsed = fields[16] if len(fields) > 16 else ''
-        walltime_seconds = ''
-        if elapsed:
-            try:
-                if '-' in elapsed:
-                    days, hms = elapsed.split('-')
-                    h, m, s = hms.split(':')
-                    walltime_seconds = str(int(days)*86400 + int(h)*3600 + int(m)*60 + float(s))
-                else:
-                    parts = elapsed.split(':')
-                    if len(parts) == 3:
-                        h, m, s = parts
-                        walltime_seconds = str(int(h)*3600 + int(m)*60 + float(s))
-            except:
-                walltime_seconds = ''
+        walltime_seconds = parse_slurm_duration(elapsed)
+
+        # Parse ReqMem — SLURM supports per-node (G/M/Gn/Mn) and per-core (Gc/Mc) suffixes.
+        # Per-core values need multiplying by ReqCPUS to get total; store raw value here.
+        # The 'n' suffix (per-node) is the default and can be stripped safely.
+        raw_mem_req = fields[6] if len(fields) > 6 else ''
+        mem_req_normalized = raw_mem_req.rstrip('n')  # strip per-node marker, keep value
 
         # Parse TRES allocation for GPU information
         def parse_tres_allocation(tres_str):
@@ -278,13 +280,15 @@ with open(output_file, 'w', newline='') as csvfile:
         node_type = detect_node_type(gpu_count, partition, qos)
 
         record = {
+            'scheduler': scheduler,
+            'scheduler_version': scheduler_version,
             'user': fields[0],
             'group': fields[1],
             'account': fields[2],
             'job_id': fields[3],
             'job_name': fields[4] if len(fields) > 4 else '',
             'cpus_req': fields[5] if len(fields) > 5 else '1',
-            'mem_req': fields[6] if len(fields) > 6 else '',
+            'mem_req': mem_req_normalized,
             'nodes': fields[7] if len(fields) > 7 else '1',
             'nodelist': fields[8] if len(fields) > 8 else '',
             'submit_time': fields[9] if len(fields) > 9 else '',

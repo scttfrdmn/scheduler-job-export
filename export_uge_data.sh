@@ -39,11 +39,16 @@ qacct -b "$START_DATE" -e "$END_DATE" > "$TEMP_FILE"
 
 echo "Parsing accounting data into CSV format..."
 
+UGE_VERSION=$(qconf -help 2>&1 | grep -oE '[0-9]+\.[0-9]+[^ ]*' | head -1 || echo "unknown")
+
 # Parse qacct output into CSV
-python3 - "$TEMP_FILE" "$OUTPUT_FILE" << 'PYTHON_EOF'
+python3 - "$TEMP_FILE" "$OUTPUT_FILE" "uge" "$UGE_VERSION" << 'PYTHON_EOF'
 import sys
 import csv
 from datetime import datetime
+
+scheduler = sys.argv[3] if len(sys.argv) > 3 else 'uge'
+scheduler_version = sys.argv[4] if len(sys.argv) > 4 else 'unknown'
 
 # Read qacct output
 with open(sys.argv[1], 'r') as f:
@@ -76,6 +81,7 @@ if current_record:
 
 # Write CSV
 fieldnames = [
+    'scheduler', 'scheduler_version',
     'user', 'group', 'account', 'job_id', 'job_name', 'queue',
     'slots', 'mem_req', 'nodes', 'nodelist', 'submit_time',
     'start_time', 'end_time', 'exit_status'
@@ -100,6 +106,8 @@ with open(sys.argv[2], 'w', newline='') as csvfile:
                     return date_str
 
             row = {
+                'scheduler': scheduler,
+                'scheduler_version': scheduler_version,
                 'user': rec.get('owner', ''),
                 'group': rec.get('group', ''),
                 'account': rec.get('project', rec.get('department', '')),

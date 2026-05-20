@@ -75,7 +75,8 @@ if command -v qconf &> /dev/null; then
     fi
 fi
 
-echo "Detected variant: $GE_VARIANT"
+GE_VERSION=$(qconf -help 2>&1 | grep -oE '[0-9]+\.[0-9]+[^ ]*' | head -1 || echo "unknown")
+echo "Detected variant: $GE_VARIANT ($GE_VERSION)"
 echo ""
 
 # Check accounting file access
@@ -158,7 +159,7 @@ echo ""
 echo "Parsing qacct output into standardized CSV format..."
 
 # Parse qacct output into CSV
-python3 - "$TEMP_FILE" "$PE_CONFIG_FILE" "$OUTPUT_FILE" << 'PYTHON_EOF'
+python3 - "$TEMP_FILE" "$PE_CONFIG_FILE" "$OUTPUT_FILE" "uge" "$GE_VARIANT" "$GE_VERSION" << 'PYTHON_EOF'
 import sys
 import csv
 import re
@@ -167,6 +168,8 @@ from datetime import datetime
 temp_file = sys.argv[1]
 pe_config_file = sys.argv[2]
 output_file = sys.argv[3]
+scheduler = sys.argv[4] if len(sys.argv) > 4 else 'uge'
+scheduler_version = f"{sys.argv[5]} {sys.argv[6]}".strip() if len(sys.argv) > 6 else 'unknown'
 
 # Read PE configurations
 pe_configs = {}
@@ -310,8 +313,8 @@ for line in lines:
                 except:
                     pass
 
-            elif key == 'wallclock':
-                # Walltime used (in seconds)
+            elif key in ('wallclock', 'ru_wallclock'):
+                # Walltime used (in seconds) — field is ru_wallclock in standard qacct output
                 try:
                     current_record['walltime_used'] = str(int(float(value)))
                 except:
@@ -427,6 +430,7 @@ print(f"Parsed {len(records)} job records from qacct", file=sys.stderr)
 
 # Write CSV with standardized columns (plus UGE-specific PE fields)
 fieldnames = [
+    'scheduler', 'scheduler_version',
     'user', 'group', 'account', 'job_id', 'job_name', 'queue',
     'cpus_req', 'mem_req', 'nodes', 'nodelist', 'submit_time',
     'start_time', 'end_time', 'exit_status', 'pe_name', 'slots',
@@ -438,6 +442,8 @@ output_records = []
 for rec in records:
     # Ensure all fields exist with defaults
     row = {k: rec.get(k, '') for k in fieldnames}
+    row['scheduler'] = scheduler
+    row['scheduler_version'] = scheduler_version
 
     # Set reasonable defaults
     if not row['cpus_req']:
