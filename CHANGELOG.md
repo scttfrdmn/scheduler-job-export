@@ -9,6 +9,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 
+## [1.2.3] - 2026-05-19
+
+### Added
+- **All Schedulers**: `scheduler` and `scheduler_version` columns added as the first two
+  fields in every export CSV. Version is detected at runtime from the scheduler CLI
+  (`sinfo --version`, `lsid`, `qstat --version`, `qconf -help`, `condor_version`).
+  Downstream analysis scripts can now identify data source without relying on filenames.
+- **HTCondor Export**: `gpu_req` column capturing `RequestGPUs` field (HTCondor 8.9+);
+  normalised to empty string when field is absent (`undefined`) on older versions.
+- **Unit test suite**: 126 bats tests covering validation logic, per-scheduler Python
+  parsers, and end-to-end integration with mocked scheduler commands.
+- **RHEL8 Docker test image** (`tests/Dockerfile.rhel8`): reproduces NC State's bash 4.4
+  environment for portability verification — `docker build` + `docker run` to confirm.
+- **Scheduler fixture data** for all 5 schedulers under `tests/fixtures/`, including
+  LSF 9.x variants (`bhist_l_9x.txt`, `lshosts_w_9x.txt`).
+
+### Fixed
+- **All export scripts**: Python heredoc blocks were invoked as `python3 << 'EOF'` then
+  re-invoked separately as `python3 - "$args"` after `EOF`. The heredoc ran immediately
+  with no argv, crashing on `sys.argv[1]` (`IndexError: list index out of range`). Fixed
+  by merging args into the heredoc line: `python3 - "$args" << 'EOF'`. Affected all 11
+  export scripts across all 5 schedulers.
+- **validation.sh**: Three bash regex portability bugs causing
+  `syntax error in conditional expression: unexpected token ';'` on bash 4.x (RHEL/CentOS):
+  - `[[ =~ alternation ]]` split into separate `||` conditions
+  - `[;\|\&\>\<]` bracket-class with backslashes replaced with `case` glob
+  - Null-byte `=~` check replaced with `tr -d '\0'` length comparison
+- **validation.sh**: `sanitize_input` stripped `-` from input, causing SLURM dates
+  (`2024-01-15`) to fail format validation after sanitization.
+- **security_logging.sh**: `log_info` and `log_error` called throughout but never defined;
+  added as thin wrappers around `log_security_event`.
+- **LSF**: `lshosts -w` LSF 9.x has 7 columns (no `ncores`/`nthreads`); code assumed 9.
+  Auto-detect column count from header; index correctly per version.
+- **LSF**: Memory field in `lshosts` can carry unit suffix (`128G`) on some installs;
+  added `parse_lshosts_memory()` to handle raw MB int, G, T, K, M suffixes.
+- **LSF**: `bhist -l` field names differ between 9.x and 10.x — added aliases:
+  `Submit Time` (was `Submitted Time`), `Memory Utilized` (was `MAX MEM`),
+  `Finish Time` / `Done` (was `Completed`).
+- **LSF**: Space-padded single-digit day dates (`Jan  1`) silently dropped; normalise
+  with `re.sub(r'\s+', ' ')` before `strptime`.
+- **LSF**: `export_lsf_cluster_config.sh` — `ncpus` key set in host dict but missing
+  from `fieldnames`, causing `ValueError` on write.
+- **SLURM**: `ReqMem` `n` suffix (per-node marker) stripped; `c` suffix (per-core)
+  preserved as-is — was silently passed through raw in both cases.
+- **SLURM**: `TotalCPU`/`Elapsed` = `INVALID` or `Unknown` (pre-18.x clusters) now
+  returns empty string instead of crashing with unpack error.
+- **UGE**: `ru_wallclock` — the actual field name emitted by qacct — was never handled;
+  only `wallclock` was. Walltime was empty for every job. Fixed in both
+  `export_uge_data.sh` and `export_uge_comprehensive.sh`.
+- **HTCondor**: `CompletionDate == 0` for held/incomplete jobs produced
+  `1970-01-01 00:00:00` as `end_time`; now correctly returns empty string.
+- **HTCondor**: `export_htcondor_data.sh` group extraction preferred `AcctGroup`
+  (plain name, no dot) over `AccountingGroup` (dot-notation `group.user`);
+  reversed priority to use `AccountingGroup` first.
+
 ## [1.2.2] - 2026-02-19
 
 ### Fixed
