@@ -79,6 +79,19 @@ MOCK
     export PATH="$mock_dir:$PATH"
 }
 
+mock_qstat() {
+    # PBS parses accounting files directly; qstat only needs to exist so the
+    # script's "which PBS command is available" gate passes.
+    local mock_dir="$TEST_DIR/mock_bin"
+    mkdir -p "$mock_dir"
+    cat > "$mock_dir/qstat" << MOCK
+#!/bin/bash
+exit 0
+MOCK
+    chmod +x "$mock_dir/qstat"
+    export PATH="$mock_dir:$PATH"
+}
+
 mock_condor_history() {
     local mock_dir="$TEST_DIR/mock_bin"
     mkdir -p "$mock_dir"
@@ -213,6 +226,32 @@ MOCK
     [[ "$header" == *"user"* ]]
     [[ "$header" == *"job_id"* ]]
     [[ "$header" == *"cpus_req"* ]]
+}
+
+# ---------------------------------------------------------------------------
+# PBS: export_pbs_data.sh
+# ---------------------------------------------------------------------------
+# PBS reads accounting files from a directory rather than a mocked binary, so
+# the fixture directory is injected via PBS_ACCT_DIR (honored by the script).
+# The fixture dir contains an accounting file named 20240115, hence the date
+# range below.
+
+@test "PBS export_pbs_data: runs end-to-end and produces CSV" {
+    mock_qstat
+    run env PBS_ACCT_DIR="$FIXTURES/pbs" bash "$REPO_ROOT/export_pbs_data.sh" 20240115 20240115
+    [ "$status" -eq 0 ]
+    csv_file=$(ls pbs_jobs_*.csv 2>/dev/null | head -1)
+    [ -n "$csv_file" ]
+}
+
+@test "PBS export_pbs_data: output CSV has expected header" {
+    mock_qstat
+    PBS_ACCT_DIR="$FIXTURES/pbs" bash "$REPO_ROOT/export_pbs_data.sh" 20240115 20240115 >/dev/null 2>&1
+    csv_file=$(ls pbs_jobs_*.csv 2>/dev/null | head -1)
+    header=$(head -1 "$csv_file")
+    [[ "$header" == *"user"* ]]
+    [[ "$header" == *"job_id"* ]]
+    [[ "$header" == *"scheduler"* ]]
 }
 
 # ---------------------------------------------------------------------------
