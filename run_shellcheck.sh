@@ -35,13 +35,13 @@ echo ""
 echo "Finding bash scripts..."
 SCRIPTS=$(find . -name "*.sh" -not -path "./.git/*" -not -path "./venv/*" -not -path "./.venv/*")
 
-if [ -z "$SCRIPTS" ]; then
+if [[ -z "${SCRIPTS}" ]]; then
     echo "No bash scripts found"
     exit 0
 fi
 
 echo "Found bash scripts:"
-echo "$SCRIPTS" | sed 's/^/  /'
+echo "${SCRIPTS}" | sed 's/^/  /'
 echo ""
 echo "Running ShellCheck..."
 echo ""
@@ -51,15 +51,15 @@ ERRORS=0
 WARNINGS=0
 PASSED=0
 
-for script in $SCRIPTS; do
-    echo "Checking: $script"
+for script in ${SCRIPTS}; do
+    echo "Checking: ${script}"
 
     # Run shellcheck and capture output
-    if shellcheck "$script"; then
+    if shellcheck "${script}"; then
         PASSED=$((PASSED + 1))
     else
         exit_code=$?
-        if [ $exit_code -eq 1 ]; then
+        if [[ "${exit_code}" -eq 1 ]]; then
             ERRORS=$((ERRORS + 1))
         else
             WARNINGS=$((WARNINGS + 1))
@@ -72,13 +72,13 @@ echo "================================================================"
 echo "ShellCheck Results"
 echo "================================================================"
 echo ""
-echo "Scripts checked: $(echo "$SCRIPTS" | wc -l | tr -d ' ')"
-echo "Passed: $PASSED"
-echo "Warnings: $WARNINGS"
-echo "Errors: $ERRORS"
+echo "Scripts checked: $(echo "${SCRIPTS}" | wc -l | tr -d ' ')"
+echo "Passed: ${PASSED}"
+echo "Warnings: ${WARNINGS}"
+echo "Errors: ${ERRORS}"
 echo ""
 
-if [ $ERRORS -eq 0 ]; then
+if [[ "${ERRORS}" -eq 0 ]]; then
     echo "✓ All scripts passed ShellCheck"
     exit 0
 else

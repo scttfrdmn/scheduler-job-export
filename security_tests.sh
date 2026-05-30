@@ -34,26 +34,26 @@ test_result() {
 
     # Run the command and capture exit code
     set +e
-    eval "$command" >/dev/null 2>&1
+    eval "${command}" >/dev/null 2>&1
     local exit_code=$?
     set -e
 
-    if [ "$expected_exit" -eq 0 ]; then
+    if [[ "${expected_exit}" -eq 0 ]]; then
         # Should succeed
-        if [ $exit_code -eq 0 ]; then
-            echo -e "${GREEN}✓ PASS${NC}: $test_name"
+        if [[ "${exit_code}" -eq 0 ]]; then
+            echo -e "${GREEN}✓ PASS${NC}: ${test_name}"
             TESTS_PASSED=$((TESTS_PASSED + 1))
         else
-            echo -e "${RED}✗ FAIL${NC}: $test_name (expected success, got exit $exit_code)"
+            echo -e "${RED}✗ FAIL${NC}: ${test_name} (expected success, got exit ${exit_code})"
             TESTS_FAILED=$((TESTS_FAILED + 1))
         fi
     else
         # Should fail
-        if [ $exit_code -ne 0 ]; then
-            echo -e "${GREEN}✓ PASS${NC}: $test_name (correctly rejected)"
+        if [[ "${exit_code}" -ne 0 ]]; then
+            echo -e "${GREEN}✓ PASS${NC}: ${test_name} (correctly rejected)"
             TESTS_PASSED=$((TESTS_PASSED + 1))
         else
-            echo -e "${RED}✗ FAIL${NC}: $test_name (should have rejected input)"
+            echo -e "${RED}✗ FAIL${NC}: ${test_name} (should have rejected input)"
             TESTS_FAILED=$((TESTS_FAILED + 1))
         fi
     fi
@@ -105,8 +105,8 @@ echo ""
 
 # Create test CSV for anonymization tests
 TEST_CSV=$(mktemp)
-echo "user,group,job_id" > "$TEST_CSV"
-echo "testuser,testgroup,12345" >> "$TEST_CSV"
+echo "user,group,job_id" > "${TEST_CSV}"
+echo "testuser,testgroup,12345" >> "${TEST_CSV}"
 trap 'rm -f "$TEST_CSV"' EXIT
 
 # Test 2.1: Parent directory traversal
@@ -132,13 +132,13 @@ echo ""
 # Test 3.1: Very long date string
 LONG_DATE=$(python3 -c "print('2024-01-01' + 'A' * 10000)")
 test_result "Long input - 10KB date string" \
-    "./export_with_users.sh '$LONG_DATE' 2024-12-31" \
+    "./export_with_users.sh '${LONG_DATE}' 2024-12-31" \
     1
 
 # Test 3.2: Very long filename
 LONG_FILENAME=$(python3 -c "print('A' * 5000 + '.csv')")
 test_result "Long input - 5KB filename" \
-    "./anonymize_cluster_data.sh '$TEST_CSV' '$LONG_FILENAME' /tmp/map.txt" \
+    "./anonymize_cluster_data.sh '${TEST_CSV}' '${LONG_FILENAME}' /tmp/map.txt" \
     1
 
 echo ""
@@ -191,7 +191,7 @@ if command -v bhist &> /dev/null; then
 fi
 
 # Test 5.3: Valid PBS date (if PBS available)
-if command -v qstat &> /dev/null && [ -d "/var/spool/pbs/server_priv/accounting" ]; then
+if command -v qstat &> /dev/null && [[ -d "/var/spool/pbs/server_priv/accounting" ]]; then
     test_result "Valid input - PBS date" \
         "sudo ./export_pbs_comprehensive.sh 20240101 20240102" \
         0
@@ -206,7 +206,7 @@ fi
 
 # Test 5.5: Valid anonymization
 test_result "Valid input - anonymization" \
-    "./anonymize_cluster_data.sh '$TEST_CSV' /tmp/test_out.csv /tmp/test_map.txt" \
+    "./anonymize_cluster_data.sh '${TEST_CSV}' /tmp/test_out.csv /tmp/test_map.txt" \
     0
 
 # Cleanup
@@ -217,12 +217,12 @@ echo "================================================================"
 echo "SECURITY TEST RESULTS"
 echo "================================================================"
 echo ""
-echo "Total tests: $TESTS_TOTAL"
-echo -e "Passed: ${GREEN}$TESTS_PASSED${NC}"
-echo -e "Failed: ${RED}$TESTS_FAILED${NC}"
+echo "Total tests: ${TESTS_TOTAL}"
+echo -e "Passed: ${GREEN}${TESTS_PASSED}${NC}"
+echo -e "Failed: ${RED}${TESTS_FAILED}${NC}"
 echo ""
 
-if [ $TESTS_FAILED -eq 0 ]; then
+if [[ "${TESTS_FAILED}" -eq 0 ]]; then
     echo -e "${GREEN}✓ ALL SECURITY TESTS PASSED${NC}"
     echo ""
     echo "All injection attempts were correctly blocked."

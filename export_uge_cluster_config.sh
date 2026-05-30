@@ -13,7 +13,7 @@ echo "================================================================"
 echo "UGE/SGE Cluster Configuration Export"
 echo "================================================================"
 echo ""
-echo "Output file: $OUTPUT_FILE"
+echo "Output file: ${OUTPUT_FILE}"
 echo ""
 
 # Check if qhost is available
@@ -29,18 +29,18 @@ fi
 GE_VARIANT="unknown"
 if command -v qconf &> /dev/null; then
     VERSION_OUTPUT=$(qconf -help 2>&1 || qconf -sobjl 2>&1 || echo "")
-    if echo "$VERSION_OUTPUT" | grep -qi "univa"; then
+    if echo "${VERSION_OUTPUT}" | grep -qi "univa"; then
         GE_VARIANT="Univa Grid Engine (UGE)"
-    elif echo "$VERSION_OUTPUT" | grep -qi "open grid"; then
+    elif echo "${VERSION_OUTPUT}" | grep -qi "open grid"; then
         GE_VARIANT="Open Grid Engine (OGE)"
-    elif echo "$VERSION_OUTPUT" | grep -qi "sun grid"; then
+    elif echo "${VERSION_OUTPUT}" | grep -qi "sun grid"; then
         GE_VARIANT="Sun Grid Engine (SGE)"
     else
         GE_VARIANT="Grid Engine"
     fi
 fi
 
-echo "Detected variant: $GE_VARIANT"
+echo "Detected variant: ${GE_VARIANT}"
 echo ""
 
 TEMP_XML=$(mktemp)
@@ -50,12 +50,12 @@ trap 'rm -f "$TEMP_XML" "$TEMP_TEXT"' EXIT
 echo "Querying all execution hosts with qhost..."
 
 # Try XML output first (more reliable parsing)
-if qhost -F -xml > "$TEMP_XML" 2>/dev/null; then
+if qhost -F -xml > "${TEMP_XML}" 2>/dev/null; then
     echo "Using XML output format"
     USE_XML=true
 else
     echo "XML not available, using text format"
-    qhost -F > "$TEMP_TEXT"
+    qhost -F > "${TEMP_TEXT}"
     USE_XML=false
 fi
 
@@ -63,7 +63,7 @@ echo ""
 echo "Parsing qhost output into CSV format..."
 
 # Parse qhost output into CSV
-python3 - "$USE_XML" "$TEMP_XML" "$TEMP_TEXT" "$OUTPUT_FILE" << 'PYTHON_EOF'
+python3 - "${USE_XML}" "${TEMP_XML}" "${TEMP_TEXT}" "${OUTPUT_FILE}" << 'PYTHON_EOF'
 import sys
 import csv
 import re
@@ -250,7 +250,7 @@ echo "UGE/SGE CLUSTER CONFIGURATION SUMMARY"
 echo "================================================================"
 
 # Calculate summary statistics
-python3 - "$OUTPUT_FILE" << 'PYTHON_EOF'
+python3 - "${OUTPUT_FILE}" << 'PYTHON_EOF'
 import csv
 import sys
 
@@ -312,15 +312,15 @@ echo "================================================================"
 echo "EXPORT COMPLETE"
 echo "================================================================"
 echo ""
-echo "Configuration file: $OUTPUT_FILE"
+echo "Configuration file: ${OUTPUT_FILE}"
 echo ""
 echo "Next steps:"
 echo ""
 echo "1. Review the configuration:"
-echo "   head -20 $OUTPUT_FILE"
+echo "   head -20 ${OUTPUT_FILE}"
 echo ""
 echo "2. Standardize format (for cross-scheduler comparison):"
-echo "   python3 standardize_cluster_config.py $OUTPUT_FILE"
+echo "   python3 standardize_cluster_config.py ${OUTPUT_FILE}"
 echo ""
 echo "3. Compare with job data to calculate utilization:"
 echo "   # Export job data first:"

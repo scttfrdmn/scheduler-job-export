@@ -147,11 +147,11 @@ echo "================================================================"
 echo "FINAL SUMMARY"
 echo "================================================================"
 echo ""
-echo "Checks passed: $CHECKS_PASSED"
-echo "Checks failed: $CHECKS_FAILED"
+echo "Checks passed: ${CHECKS_PASSED}"
+echo "Checks failed: ${CHECKS_FAILED}"
 echo ""
 
-if [ $CHECKS_FAILED -eq 0 ]; then
+if [[ "${CHECKS_FAILED}" -eq 0 ]]; then
     echo "✓ ALL QUALITY CHECKS PASSED"
     exit 0
 else

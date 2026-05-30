@@ -81,7 +81,7 @@ EOF
 }
 
 # Check arguments
-if [ $# -lt 2 ]; then
+if [[ $# -lt 2 ]]; then
     log_error "Missing required arguments"
     usage
 fi
@@ -90,24 +90,24 @@ INPUT_CSV="$1"
 OUTPUT_CSV="$2"
 
 # Validate input file
-if [ ! -f "$INPUT_CSV" ]; then
-    log_error "Input file not found: $INPUT_CSV"
+if [[ ! -f "${INPUT_CSV}" ]]; then
+    log_error "Input file not found: ${INPUT_CSV}"
     exit 1
 fi
 
-if [ ! -r "$INPUT_CSV" ]; then
-    log_error "Input file not readable: $INPUT_CSV"
+if [[ ! -r "${INPUT_CSV}" ]]; then
+    log_error "Input file not readable: ${INPUT_CSV}"
     exit 1
 fi
 
 log_info "Starting anonymization process..."
-log_info "Input file: $INPUT_CSV"
-log_info "Output file: $OUTPUT_CSV"
-log_info "Mapping file: $MAPPING_FILE"
+log_info "Input file: ${INPUT_CSV}"
+log_info "Output file: ${OUTPUT_CSV}"
+log_info "Mapping file: ${MAPPING_FILE}"
 
 # Read CSV header
-HEADER=$(head -n 1 "$INPUT_CSV")
-log_info "Detected columns: $HEADER"
+HEADER=$(head -n 1 "${INPUT_CSV}")
+log_info "Detected columns: ${HEADER}"
 
 # Detect user, group, and hostname columns
 USER_COL=""
@@ -116,51 +116,51 @@ HOSTNAME_COL=""
 ACCOUNT_COL=""
 COL_NUM=1
 
-IFS=',' read -ra COLS <<< "$HEADER"
+IFS=',' read -ra COLS <<< "${HEADER}"
 for col in "${COLS[@]}"; do
-    col_lower=$(echo "$col" | tr '[:upper:]' '[:lower:]' | tr -d ' ')
+    col_lower=$(echo "${col}" | tr '[:upper:]' '[:lower:]' | tr -d ' ')
 
     # Detect user column (prefer 'user' over 'account')
-    if [[ "$col_lower" =~ ^(user|uid|username)$ ]]; then
-        USER_COL="$col"
-        USER_COL_NUM=$COL_NUM
-        log_info "Found user column: '$USER_COL' (position $USER_COL_NUM)"
-    elif [[ "$col_lower" =~ ^(account)$ ]] && [ -z "$USER_COL" ]; then
+    if [[ "${col_lower}" =~ ^(user|uid|username)$ ]]; then
+        USER_COL="${col}"
+        USER_COL_NUM=${COL_NUM}
+        log_info "Found user column: '${USER_COL}' (position ${USER_COL_NUM})"
+    elif [[ "${col_lower}" =~ ^(account)$ ]] && [[ -z "${USER_COL}" ]]; then
         # Only use 'account' if no 'user' column found yet
-        ACCOUNT_COL="$col"
-        ACCOUNT_COL_NUM=$COL_NUM
-        log_info "Found account column: '$ACCOUNT_COL' (position $ACCOUNT_COL_NUM)"
+        ACCOUNT_COL="${col}"
+        ACCOUNT_COL_NUM=${COL_NUM}
+        log_info "Found account column: '${ACCOUNT_COL}' (position ${ACCOUNT_COL_NUM})"
     fi
 
     # Detect group column
-    if [[ "$col_lower" =~ ^(group|gid|groupname)$ ]]; then
-        GROUP_COL="$col"
-        GROUP_COL_NUM=$COL_NUM
-        log_info "Found group column: '$GROUP_COL' (position $GROUP_COL_NUM)"
+    if [[ "${col_lower}" =~ ^(group|gid|groupname)$ ]]; then
+        GROUP_COL="${col}"
+        GROUP_COL_NUM=${COL_NUM}
+        log_info "Found group column: '${GROUP_COL}' (position ${GROUP_COL_NUM})"
     fi
 
     # Detect hostname column
-    if [[ "$col_lower" =~ ^(hostname|nodename|nodelist|host|node)$ ]]; then
-        HOSTNAME_COL="$col"
-        HOSTNAME_COL_NUM=$COL_NUM
-        log_info "Found hostname column: '$HOSTNAME_COL' (position $HOSTNAME_COL_NUM)"
+    if [[ "${col_lower}" =~ ^(hostname|nodename|nodelist|host|node)$ ]]; then
+        HOSTNAME_COL="${col}"
+        HOSTNAME_COL_NUM=${COL_NUM}
+        log_info "Found hostname column: '${HOSTNAME_COL}' (position ${HOSTNAME_COL_NUM})"
     fi
 
     ((COL_NUM++))
 done
 
 # If no explicit 'user' column found, use 'account' as fallback
-if [ -z "$USER_COL" ] && [ -n "$ACCOUNT_COL" ]; then
-    USER_COL="$ACCOUNT_COL"
-    USER_COL_NUM=$ACCOUNT_COL_NUM
+if [[ -z "${USER_COL}" ]] && [[ -n "${ACCOUNT_COL}" ]]; then
+    USER_COL="${ACCOUNT_COL}"
+    USER_COL_NUM=${ACCOUNT_COL_NUM}
     log_info "Using account column as user column (no explicit 'user' column found)"
 fi
 
 # Validate columns found
-if [ -z "$USER_COL" ] && [ -z "$GROUP_COL" ] && [ -z "$HOSTNAME_COL" ]; then
+if [[ -z "${USER_COL}" ]] && [[ -z "${GROUP_COL}" ]] && [[ -z "${HOSTNAME_COL}" ]]; then
     log_error "No user, group, or hostname columns detected in CSV"
     log_error "Expected columns like: user, uid, username, account, group, gid, groupname, hostname, nodename"
-    log_error "Found: $HEADER"
+    log_error "Found: ${HEADER}"
     exit 1
 fi
 
@@ -173,47 +173,47 @@ validate_column_data() {
     local col_type="$3"  # user, group, or hostname
 
     # Sample first 10 data rows (skip header)
-    local sample=$(tail -n +2 "$INPUT_CSV" | head -10 | cut -d',' -f"$col_num" | tr -d '"')
+    local sample=$(tail -n +2 "${INPUT_CSV}" | head -10 | cut -d',' -f"${col_num}" | tr -d '"')
 
     # Count non-empty values
-    local non_empty=$(echo "$sample" | grep -v '^$' | wc -l | tr -d ' ')
+    local non_empty=$(echo "${sample}" | grep -v '^$' | wc -l | tr -d ' ')
 
-    if [ "$non_empty" -eq 0 ]; then
-        log_warn "Column '$col_name' appears to be empty in sample data"
+    if [[ "${non_empty}" -eq 0 ]]; then
+        log_warn "Column '${col_name}' appears to be empty in sample data"
         return 1
     fi
 
     # Validate data patterns based on type
-    case "$col_type" in
+    case "${col_type}" in
         user)
             # Users should be alphanumeric with optional dash, underscore, dot
-            if echo "$sample" | grep -qE '^[a-zA-Z0-9._-]+$'; then
-                log_info "✓ User column '$col_name' data looks valid"
+            if echo "${sample}" | grep -qE '^[a-zA-Z0-9._-]+$'; then
+                log_info "✓ User column '${col_name}' data looks valid"
                 return 0
             else
-                log_warn "⚠ User column '$col_name' contains unexpected characters"
+                log_warn "⚠ User column '${col_name}' contains unexpected characters"
                 log_warn "Sample values:"
-                echo "$sample" | head -3 | sed 's/^/    /' >&2
+                echo "${sample}" | head -3 | sed 's/^/    /' >&2
                 return 1
             fi
             ;;
         group)
             # Groups similar to users
-            if echo "$sample" | grep -qE '^[a-zA-Z0-9._-]+$'; then
-                log_info "✓ Group column '$col_name' data looks valid"
+            if echo "${sample}" | grep -qE '^[a-zA-Z0-9._-]+$'; then
+                log_info "✓ Group column '${col_name}' data looks valid"
                 return 0
             else
-                log_warn "⚠ Group column '$col_name' contains unexpected characters"
+                log_warn "⚠ Group column '${col_name}' contains unexpected characters"
                 return 1
             fi
             ;;
         hostname)
             # Hostnames can have dots, dashes, alphanumeric, and commas (for nodelists)
-            if echo "$sample" | grep -qE '^[a-zA-Z0-9.,:_-]+$'; then
-                log_info "✓ Hostname column '$col_name' data looks valid"
+            if echo "${sample}" | grep -qE '^[a-zA-Z0-9.,:_-]+$'; then
+                log_info "✓ Hostname column '${col_name}' data looks valid"
                 return 0
             else
-                log_warn "⚠ Hostname column '$col_name' contains unexpected characters"
+                log_warn "⚠ Hostname column '${col_name}' contains unexpected characters"
                 return 1
             fi
             ;;
@@ -223,30 +223,30 @@ validate_column_data() {
 # Validate detected columns
 VALIDATION_WARNINGS=0
 
-if [ -n "$USER_COL" ]; then
-    if ! validate_column_data "$USER_COL_NUM" "$USER_COL" "user"; then
+if [[ -n "${USER_COL}" ]]; then
+    if ! validate_column_data "${USER_COL_NUM}" "${USER_COL}" "user"; then
         VALIDATION_WARNINGS=$((VALIDATION_WARNINGS + 1))
     fi
 fi
 
-if [ -n "$GROUP_COL" ]; then
-    if ! validate_column_data "$GROUP_COL_NUM" "$GROUP_COL" "group"; then
+if [[ -n "${GROUP_COL}" ]]; then
+    if ! validate_column_data "${GROUP_COL_NUM}" "${GROUP_COL}" "group"; then
         VALIDATION_WARNINGS=$((VALIDATION_WARNINGS + 1))
     fi
 fi
 
-if [ -n "$HOSTNAME_COL" ]; then
-    if ! validate_column_data "$HOSTNAME_COL_NUM" "$HOSTNAME_COL" "hostname"; then
+if [[ -n "${HOSTNAME_COL}" ]]; then
+    if ! validate_column_data "${HOSTNAME_COL_NUM}" "${HOSTNAME_COL}" "hostname"; then
         VALIDATION_WARNINGS=$((VALIDATION_WARNINGS + 1))
     fi
 fi
 
 # Ask user to confirm if warnings found
-if [ $VALIDATION_WARNINGS -gt 0 ]; then
-    log_warn "Found $VALIDATION_WARNINGS validation warnings"
+if [[ "${VALIDATION_WARNINGS}" -gt 0 ]]; then
+    log_warn "Found ${VALIDATION_WARNINGS} validation warnings"
     echo ""
     read -p "Continue with anonymization anyway? (yes/no): " confirm
-    if [[ "$confirm" != "yes" ]]; then
+    if [[ "${confirm}" != "yes" ]]; then
         log_error "Anonymization cancelled by user due to validation warnings"
         exit 1
     fi
@@ -256,82 +256,82 @@ fi
 # Extract unique users, groups, and hostnames
 log_info "Extracting unique users, groups, and hostnames..."
 
-if [ -n "$USER_COL" ]; then
-    tail -n +2 "$INPUT_CSV" | cut -d',' -f"$USER_COL_NUM" | sort -u > "$TEMP_DIR/users.txt"
-    NUM_USERS=$(wc -l < "$TEMP_DIR/users.txt")
-    log_info "Found $NUM_USERS unique users"
+if [[ -n "${USER_COL}" ]]; then
+    tail -n +2 "${INPUT_CSV}" | cut -d',' -f"${USER_COL_NUM}" | sort -u > "${TEMP_DIR}/users.txt"
+    NUM_USERS=$(wc -l < "${TEMP_DIR}/users.txt")
+    log_info "Found ${NUM_USERS} unique users"
 fi
 
-if [ -n "$GROUP_COL" ]; then
-    tail -n +2 "$INPUT_CSV" | cut -d',' -f"$GROUP_COL_NUM" | sort -u > "$TEMP_DIR/groups.txt"
-    NUM_GROUPS=$(wc -l < "$TEMP_DIR/groups.txt")
-    log_info "Found $NUM_GROUPS unique groups"
+if [[ -n "${GROUP_COL}" ]]; then
+    tail -n +2 "${INPUT_CSV}" | cut -d',' -f"${GROUP_COL_NUM}" | sort -u > "${TEMP_DIR}/groups.txt"
+    NUM_GROUPS=$(wc -l < "${TEMP_DIR}/groups.txt")
+    log_info "Found ${NUM_GROUPS} unique groups"
 fi
 
-if [ -n "$HOSTNAME_COL" ]; then
-    tail -n +2 "$INPUT_CSV" | cut -d',' -f"$HOSTNAME_COL_NUM" | sort -u > "$TEMP_DIR/hostnames.txt"
-    NUM_HOSTNAMES=$(wc -l < "$TEMP_DIR/hostnames.txt")
-    log_info "Found $NUM_HOSTNAMES unique hostnames"
+if [[ -n "${HOSTNAME_COL}" ]]; then
+    tail -n +2 "${INPUT_CSV}" | cut -d',' -f"${HOSTNAME_COL_NUM}" | sort -u > "${TEMP_DIR}/hostnames.txt"
+    NUM_HOSTNAMES=$(wc -l < "${TEMP_DIR}/hostnames.txt")
+    log_info "Found ${NUM_HOSTNAMES} unique hostnames"
 fi
 
 # Generate mapping files
 log_info "Generating anonymous mappings..."
 
 # User mapping
-if [ -n "$USER_COL" ]; then
+if [[ -n "${USER_COL}" ]]; then
     counter=1
     while IFS= read -r user; do
         # Skip empty lines
-        [ -z "$user" ] && continue
+        [[ -z "${user}" ]] && continue
 
         # Generate anonymous ID with zero-padding
-        anon_id=$(printf "user_%04d" $counter)
-        echo "$user -> $anon_id"
+        anon_id=$(printf "user_%04d" "${counter}")
+        echo "${user} -> ${anon_id}"
 
         # Store mapping
-        echo "USER: $user -> $anon_id" >> "$TEMP_DIR/mapping.txt"
+        echo "USER: ${user} -> ${anon_id}" >> "${TEMP_DIR}/mapping.txt"
 
         # Store for sed replacement
-        echo "s|^\\([^,]*,\\)\\{$((USER_COL_NUM-1))\\}\\K$user|$anon_id|g" >> "$TEMP_DIR/sed_users.txt"
+        echo "s|^\\([^,]*,\\)\\{$((USER_COL_NUM-1))\\}\\K${user}|${anon_id}|g" >> "${TEMP_DIR}/sed_users.txt"
 
         ((counter++))
-    done < "$TEMP_DIR/users.txt"
+    done < "${TEMP_DIR}/users.txt"
     log_info "Created $((counter-1)) user mappings"
 fi
 
 # Group mapping (using letters)
-if [ -n "$GROUP_COL" ]; then
+if [[ -n "${GROUP_COL}" ]]; then
     counter=1
     while IFS= read -r group; do
         # Skip empty lines
-        [ -z "$group" ] && continue
+        [[ -z "${group}" ]] && continue
 
         # Generate anonymous ID (group_A, group_B, etc.)
         # For >26 groups, use group_AA, group_AB, etc.
-        if [ $counter -le 26 ]; then
+        if [[ "${counter}" -le 26 ]]; then
             letter=$(printf "\\$(printf '%03o' $((64+counter)))")
             anon_id="group_${letter}"
         else
             idx=$((counter-27))
             first=$((idx/26 + 65))
             second=$((idx%26 + 65))
-            anon_id="group_$(printf "\\$(printf '%03o' $first)")$(printf "\\$(printf '%03o' $second)")"
+            anon_id="group_$(printf "\\$(printf '%03o' "${first}")")$(printf "\\$(printf '%03o' "${second}")")"
         fi
 
-        echo "$group -> $anon_id"
+        echo "${group} -> ${anon_id}"
 
         # Store mapping
-        echo "GROUP: $group -> $anon_id" >> "$TEMP_DIR/mapping.txt"
+        echo "GROUP: ${group} -> ${anon_id}" >> "${TEMP_DIR}/mapping.txt"
 
         ((counter++))
-    done < "$TEMP_DIR/groups.txt"
+    done < "${TEMP_DIR}/groups.txt"
     log_info "Created $((counter-1)) group mappings"
 fi
 
 # Create a more robust Python script for anonymization
 log_info "Creating anonymization processor..."
 
-cat > "$TEMP_DIR/anonymize.py" << 'PYTHON_EOF'
+cat > "${TEMP_DIR}/anonymize.py" << 'PYTHON_EOF'
 #!/usr/bin/env python3
 import sys
 import csv
@@ -453,7 +453,7 @@ if __name__ == "__main__":
 
 PYTHON_EOF
 
-chmod +x "$TEMP_DIR/anonymize.py"
+chmod +x "${TEMP_DIR}/anonymize.py"
 
 # Run anonymization
 log_info "Processing CSV file..."
@@ -462,27 +462,27 @@ USER_ARG="${USER_COL_NUM:-None}"
 GROUP_ARG="${GROUP_COL_NUM:-None}"
 HOSTNAME_ARG="${HOSTNAME_COL_NUM:-None}"
 
-python3 "$TEMP_DIR/anonymize.py" "$INPUT_CSV" "$OUTPUT_CSV" "$MAPPING_FILE" "$USER_ARG" "$GROUP_ARG" "$HOSTNAME_ARG"
+python3 "${TEMP_DIR}/anonymize.py" "${INPUT_CSV}" "${OUTPUT_CSV}" "${MAPPING_FILE}" "${USER_ARG}" "${GROUP_ARG}" "${HOSTNAME_ARG}"
 
 # Set secure permissions on mapping file
-chmod 600 "$MAPPING_FILE"
+chmod 600 "${MAPPING_FILE}"
 log_info "Mapping file created with restricted permissions (600)"
 
 # Print summary
 log_info "Anonymization complete!"
 echo ""
 log_info "Summary:"
-log_info "  Input rows: $(tail -n +2 "$INPUT_CSV" | wc -l)"
-log_info "  Output rows: $(tail -n +2 "$OUTPUT_CSV" | wc -l)"
-log_info "  Output file: $OUTPUT_CSV"
-log_info "  Mapping file: $MAPPING_FILE"
+log_info "  Input rows: $(tail -n +2 "${INPUT_CSV}" | wc -l)"
+log_info "  Output rows: $(tail -n +2 "${OUTPUT_CSV}" | wc -l)"
+log_info "  Output file: ${OUTPUT_CSV}"
+log_info "  Mapping file: ${MAPPING_FILE}"
 
 echo ""
 log_warn "SECURITY REMINDER:"
-log_warn "  1. The mapping file ($MAPPING_FILE) allows de-anonymization"
-log_warn "  2. Restrict access to admin-only: chmod 600 $MAPPING_FILE"
+log_warn "  1. The mapping file (${MAPPING_FILE}) allows de-anonymization"
+log_warn "  2. Restrict access to admin-only: chmod 600 ${MAPPING_FILE}"
 log_warn "  3. Store in secure location with limited access"
-log_warn "  4. Consider encrypting: gpg -c $MAPPING_FILE"
+log_warn "  4. Consider encrypting: gpg -c ${MAPPING_FILE}"
 log_warn "  5. Do NOT share mapping file with anonymized data"
 
 echo ""
@@ -492,6 +492,6 @@ log_info "Users and groups are consistently mapped, preserving patterns."
 # Show sample
 echo ""
 log_info "Sample of anonymized data (first 5 rows):"
-head -n 6 "$OUTPUT_CSV"
+head -n 6 "${OUTPUT_CSV}"
 
 exit 0

@@ -17,8 +17,8 @@ set -euo pipefail
 
 # Load security libraries
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/validation.sh"
-source "$SCRIPT_DIR/security_logging.sh"
+source "${SCRIPT_DIR}/validation.sh"
+source "${SCRIPT_DIR}/security_logging.sh"
 
 # Configuration
 START_DATE="${1:-01/01/$(date -d '1 year ago' +%Y 2>/dev/null || date -v-1y +%Y)}"
@@ -26,15 +26,15 @@ END_DATE="${2:-$(date +%m/%d/%Y)}"
 OUTPUT_FILE="uge_jobs_with_users_$(date +%Y%m%d).csv"
 
 # Validate and sanitize date inputs
-if ! START_DATE=$(validate_and_sanitize_date "$START_DATE" "uge"); then
-    log_validation_failure "date" "$START_DATE"
+if ! START_DATE=$(validate_and_sanitize_date "${START_DATE}" "uge"); then
+    log_validation_failure "date" "${START_DATE}"
     echo "ERROR: Invalid start date format" >&2
     echo "Expected: MM/DD/YYYY (e.g., 01/31/2024)" >&2
     exit 1
 fi
 
-if ! END_DATE=$(validate_and_sanitize_date "$END_DATE" "uge"); then
-    log_validation_failure "date" "$END_DATE"
+if ! END_DATE=$(validate_and_sanitize_date "${END_DATE}" "uge"); then
+    log_validation_failure "date" "${END_DATE}"
     echo "ERROR: Invalid end date format" >&2
     echo "Expected: MM/DD/YYYY (e.g., 12/31/2024)" >&2
     exit 1
@@ -44,12 +44,12 @@ echo "================================================================"
 echo "UGE/SGE Comprehensive Job Data Export"
 echo "================================================================"
 echo ""
-echo "Date range: $START_DATE to $END_DATE"
-echo "Output file: $OUTPUT_FILE"
+echo "Date range: ${START_DATE} to ${END_DATE}"
+echo "Output file: ${OUTPUT_FILE}"
 echo ""
 
 # Log export start
-log_export_start "UGE" "start=$START_DATE end=$END_DATE output=$OUTPUT_FILE"
+log_export_start "UGE" "start=${START_DATE} end=${END_DATE} output=${OUTPUT_FILE}"
 
 # Check if qacct is available
 if ! command -v qacct &> /dev/null; then
@@ -64,11 +64,11 @@ fi
 GE_VARIANT="unknown"
 if command -v qconf &> /dev/null; then
     VERSION_OUTPUT=$(qconf -help 2>&1 || qconf -sobjl 2>&1 || echo "")
-    if echo "$VERSION_OUTPUT" | grep -qi "univa"; then
+    if echo "${VERSION_OUTPUT}" | grep -qi "univa"; then
         GE_VARIANT="Univa Grid Engine (UGE)"
-    elif echo "$VERSION_OUTPUT" | grep -qi "open grid"; then
+    elif echo "${VERSION_OUTPUT}" | grep -qi "open grid"; then
         GE_VARIANT="Open Grid Engine (OGE)"
-    elif echo "$VERSION_OUTPUT" | grep -qi "sun grid"; then
+    elif echo "${VERSION_OUTPUT}" | grep -qi "sun grid"; then
         GE_VARIANT="Sun Grid Engine (SGE)"
     else
         GE_VARIANT="Grid Engine"
@@ -76,14 +76,14 @@ if command -v qconf &> /dev/null; then
 fi
 
 GE_VERSION=$(qconf -help 2>&1 | grep -oE '[0-9]+\.[0-9]+[^ ]*' | head -1 || echo "unknown")
-echo "Detected variant: $GE_VARIANT ($GE_VERSION)"
+echo "Detected variant: ${GE_VARIANT} (${GE_VERSION})"
 echo ""
 
 # Check accounting file access
-if [ -n "$SGE_ROOT" ]; then
-    ACCT_FILE="$SGE_ROOT/default/common/accounting"
-    if [ -f "$ACCT_FILE" ]; then
-        echo "Found accounting file: $ACCT_FILE"
+if [[ -n "${SGE_ROOT}" ]]; then
+    ACCT_FILE="${SGE_ROOT}/default/common/accounting"
+    if [[ -f "${ACCT_FILE}" ]]; then
+        echo "Found accounting file: ${ACCT_FILE}"
     fi
 fi
 
@@ -97,37 +97,37 @@ if command -v qconf &> /dev/null; then
     # Get list of all PEs
     PE_LIST=$(qconf -spl 2>/dev/null || echo "")
 
-    if [ -n "$PE_LIST" ]; then
+    if [[ -n "${PE_LIST}" ]]; then
         # For each PE, get its allocation rule
-        echo "pe_name,allocation_rule,slots_per_host" > "$PE_CONFIG_FILE"
+        echo "pe_name,allocation_rule,slots_per_host" > "${PE_CONFIG_FILE}"
 
-        for pe in $PE_LIST; do
-            PE_DETAILS=$(qconf -sp "$pe" 2>/dev/null || echo "")
-            if [ -n "$PE_DETAILS" ]; then
+        for pe in ${PE_LIST}; do
+            PE_DETAILS=$(qconf -sp "${pe}" 2>/dev/null || echo "")
+            if [[ -n "${PE_DETAILS}" ]]; then
                 # Extract allocation_rule
-                ALLOC_RULE=$(echo "$PE_DETAILS" | grep "^allocation_rule" | awk '{print $2}')
+                ALLOC_RULE=$(echo "${PE_DETAILS}" | grep "^allocation_rule" | awk '{print $2}')
 
                 # Determine slots per host from allocation rule
-                if [[ "$ALLOC_RULE" =~ ^[0-9]+$ ]]; then
+                if [[ "${ALLOC_RULE}" =~ ^[0-9]+$ ]]; then
                     # Fixed number = slots per host
-                    SLOTS_PER_HOST="$ALLOC_RULE"
-                elif [[ "$ALLOC_RULE" == "\$pe_slots" ]]; then
+                    SLOTS_PER_HOST="${ALLOC_RULE}"
+                elif [[ "${ALLOC_RULE}" == "\$pe_slots" ]]; then
                     # All on one host (SMP)
                     SLOTS_PER_HOST="SMP"
-                elif [[ "$ALLOC_RULE" == "\$fill_up" ]]; then
+                elif [[ "${ALLOC_RULE}" == "\$fill_up" ]]; then
                     SLOTS_PER_HOST="fill_up"
-                elif [[ "$ALLOC_RULE" == "\$round_robin" ]]; then
+                elif [[ "${ALLOC_RULE}" == "\$round_robin" ]]; then
                     SLOTS_PER_HOST="round_robin"
                 else
                     SLOTS_PER_HOST="unknown"
                 fi
 
-                echo "$pe,$ALLOC_RULE,$SLOTS_PER_HOST" >> "$PE_CONFIG_FILE"
+                echo "${pe},${ALLOC_RULE},${SLOTS_PER_HOST}" >> "${PE_CONFIG_FILE}"
             fi
         done
 
-        NUM_PES=$(tail -n +2 "$PE_CONFIG_FILE" | wc -l | tr -d ' ')
-        echo "Found $NUM_PES parallel environments"
+        NUM_PES=$(tail -n +2 "${PE_CONFIG_FILE}" | wc -l | tr -d ' ')
+        echo "Found ${NUM_PES} parallel environments"
     else
         echo "No parallel environments configured or access denied"
     fi
@@ -143,7 +143,7 @@ echo ""
 # -e end_time (MM/DD/YYYY format)
 # -j for all jobs (optional job ID filter)
 
-qacct -b "$START_DATE" -e "$END_DATE" > "$TEMP_FILE" 2>&1 || {
+qacct -b "${START_DATE}" -e "${END_DATE}" > "${TEMP_FILE}" 2>&1 || {
 
     echo "ERROR: qacct query failed"
     echo ""
@@ -152,24 +152,24 @@ qacct -b "$START_DATE" -e "$END_DATE" > "$TEMP_FILE" 2>&1 || {
     echo "  - Accounting file not readable"
     echo "  - Date format incorrect (should be MM/DD/YYYY)"
     echo ""
-    cat "$TEMP_FILE"
+    cat "${TEMP_FILE}"
     exit 1
 }
 
 echo ""
 
-if [ "${VERBOSE:-0}" = "1" ]; then
+if [[ "${VERBOSE:-0}" = "1" ]]; then
     echo "================================================================" >&2
     echo "VERBOSE: Raw qacct output (first 30 lines):" >&2
-    head -30 "$TEMP_FILE" >&2
-    echo "  ... ($(wc -l < "$TEMP_FILE") total lines)" >&2
+    head -30 "${TEMP_FILE}" >&2
+    echo "  ... ($(wc -l < "${TEMP_FILE}") total lines)" >&2
     echo "================================================================" >&2
 fi
 
 echo "Parsing qacct output into standardized CSV format..."
 
 # Parse qacct output into CSV
-python3 - "$TEMP_FILE" "$PE_CONFIG_FILE" "$OUTPUT_FILE" "uge" "$GE_VARIANT" "$GE_VERSION" << 'PYTHON_EOF'
+python3 - "${TEMP_FILE}" "${PE_CONFIG_FILE}" "${OUTPUT_FILE}" "uge" "${GE_VARIANT}" "${GE_VERSION}" << 'PYTHON_EOF'
 import sys
 import csv
 import re
@@ -537,29 +537,29 @@ echo "================================================================"
 echo "EXPORT COMPLETE"
 echo "================================================================"
 echo ""
-echo "Output file: $OUTPUT_FILE"
+echo "Output file: ${OUTPUT_FILE}"
 echo ""
 echo "File details:"
-ls -lh "$OUTPUT_FILE"
+ls -lh "${OUTPUT_FILE}"
 echo ""
 echo "First few records:"
-head -5 "$OUTPUT_FILE"
+head -5 "${OUTPUT_FILE}"
 echo ""
 echo "================================================================"
 echo "NEXT STEPS"
 echo "================================================================"
 echo ""
 echo "1. Verify the export looks correct:"
-echo "   head -20 $OUTPUT_FILE"
-echo "   tail -20 $OUTPUT_FILE"
+echo "   head -20 ${OUTPUT_FILE}"
+echo "   tail -20 ${OUTPUT_FILE}"
 echo ""
 echo "2. Check statistics:"
-echo "   wc -l $OUTPUT_FILE"
-echo "   cut -d, -f1 $OUTPUT_FILE | sort -u | wc -l  # Unique users"
+echo "   wc -l ${OUTPUT_FILE}"
+echo "   cut -d, -f1 ${OUTPUT_FILE} | sort -u | wc -l  # Unique users"
 echo ""
 echo "3. Anonymize the data:"
 echo "   ./anonymize_cluster_data.sh \\"
-echo "     $OUTPUT_FILE \\"
+echo "     ${OUTPUT_FILE} \\"
 echo "     uge_jobs_anonymized.csv \\"
 echo "     uge_mapping_secure.txt"
 echo ""

@@ -11,8 +11,8 @@ DAYS_AGO="${1:-365}"  # How many days back to query
 OUTPUT_FILE="htcondor_jobs_with_users_$(date +%Y%m%d).csv"
 
 echo "Exporting HTCondor job data with user/group information..."
-echo "Querying last $DAYS_AGO days"
-echo "Output file: $OUTPUT_FILE"
+echo "Querying last ${DAYS_AGO} days"
+echo "Output file: ${OUTPUT_FILE}"
 echo ""
 
 # Check if condor_history is available
@@ -22,7 +22,7 @@ if ! command -v condor_history &> /dev/null; then
 fi
 
 CONDOR_VERSION=$(condor_version 2>/dev/null | awk '/CondorVersion/{print $2}' || echo "unknown")
-echo "Detected HTCondor version: $CONDOR_VERSION"
+echo "Detected HTCondor version: ${CONDOR_VERSION}"
 echo "Querying HTCondor history (this may take several minutes)..."
 
 # Use condor_history to export job history
@@ -36,7 +36,7 @@ trap 'rm -f "$TEMP_FILE"' EXIT
 # -constraint 'JobStatus == 4' means completed jobs
 # Add -file option if using file-based history
 
-condor_history -constraint "CompletionDate > (time() - ($DAYS_AGO * 86400))" \
+condor_history -constraint "CompletionDate > (time() - (${DAYS_AGO} * 86400))" \
     -af:ht \
     Owner \
     AcctGroup \
@@ -60,20 +60,20 @@ condor_history -constraint "CompletionDate > (time() - ($DAYS_AGO * 86400))" \
     RemoteWallClockTime \
     CumulativeRemoteSysCpu \
     CumulativeRemoteUserCpu \
-    > "$TEMP_FILE"
+    > "${TEMP_FILE}"
 
-if [ "${VERBOSE:-0}" = "1" ]; then
+if [[ "${VERBOSE:-0}" = "1" ]]; then
     echo "================================================================" >&2
     echo "VERBOSE: Raw condor_history output (first 5 lines):" >&2
-    head -5 "$TEMP_FILE" >&2
-    echo "  ... ($(wc -l < "$TEMP_FILE") total lines)" >&2
+    head -5 "${TEMP_FILE}" >&2
+    echo "  ... ($(wc -l < "${TEMP_FILE}") total lines)" >&2
     echo "================================================================" >&2
 fi
 
 echo "Parsing HTCondor output into CSV format..."
 
 # Parse condor_history output into CSV
-python3 - "$TEMP_FILE" "$OUTPUT_FILE" "htcondor" "$CONDOR_VERSION" << 'PYTHON_EOF'
+python3 - "${TEMP_FILE}" "${OUTPUT_FILE}" "htcondor" "${CONDOR_VERSION}" << 'PYTHON_EOF'
 import sys
 import csv
 from datetime import datetime
@@ -287,15 +287,15 @@ echo ""
 echo "Export complete!"
 echo ""
 echo "Statistics:"
-echo "  Total records: $(tail -n +2 "$OUTPUT_FILE" | wc -l)"
-echo "  Output file: $OUTPUT_FILE"
+echo "  Total records: $(tail -n +2 "${OUTPUT_FILE}" | wc -l)"
+echo "  Output file: ${OUTPUT_FILE}"
 echo ""
 echo "Next steps:"
 echo "  1. Verify the export:"
-echo "     head $OUTPUT_FILE"
+echo "     head ${OUTPUT_FILE}"
 echo ""
 echo "  2. Run anonymization:"
-echo "     ./anonymize_cluster_data.sh $OUTPUT_FILE htcondor_jobs_anonymized.csv mapping_secure.txt"
+echo "     ./anonymize_cluster_data.sh ${OUTPUT_FILE} htcondor_jobs_anonymized.csv mapping_secure.txt"
 echo ""
 echo "  3. Secure the mapping file:"
 echo "     chmod 600 mapping_secure.txt"

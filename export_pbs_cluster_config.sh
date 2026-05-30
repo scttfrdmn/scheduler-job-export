@@ -13,7 +13,7 @@ echo "================================================================"
 echo "PBS/Torque Cluster Configuration Export"
 echo "================================================================"
 echo ""
-echo "Output file: $OUTPUT_FILE"
+echo "Output file: ${OUTPUT_FILE}"
 echo ""
 
 # Check if pbsnodes is available
@@ -27,17 +27,17 @@ fi
 # Detect PBS variant
 PBS_VARIANT="unknown"
 VERSION_OUTPUT=$(pbsnodes --version 2>&1 || echo "")
-if echo "$VERSION_OUTPUT" | grep -qi "pbs pro"; then
+if echo "${VERSION_OUTPUT}" | grep -qi "pbs pro"; then
     PBS_VARIANT="PBS Pro"
-elif echo "$VERSION_OUTPUT" | grep -qi "torque"; then
+elif echo "${VERSION_OUTPUT}" | grep -qi "torque"; then
     PBS_VARIANT="Torque"
-elif echo "$VERSION_OUTPUT" | grep -qi "openpbs"; then
+elif echo "${VERSION_OUTPUT}" | grep -qi "openpbs"; then
     PBS_VARIANT="OpenPBS"
 else
     PBS_VARIANT="PBS"
 fi
 
-echo "Detected PBS variant: $PBS_VARIANT"
+echo "Detected PBS variant: ${PBS_VARIANT}"
 echo ""
 
 TEMP_FILE=$(mktemp)
@@ -48,16 +48,16 @@ echo "Querying all nodes with pbsnodes..."
 # Get all node information
 # -a = all nodes
 # -S = show also unavailable nodes
-pbsnodes -a > "$TEMP_FILE" 2>&1 || {
+pbsnodes -a > "${TEMP_FILE}" 2>&1 || {
     echo "Warning: pbsnodes -a failed, trying without -a"
-    pbsnodes > "$TEMP_FILE"
+    pbsnodes > "${TEMP_FILE}"
 }
 
 echo ""
 echo "Parsing pbsnodes output into CSV format..."
 
 # Parse pbsnodes output into CSV
-python3 - "$TEMP_FILE" "$OUTPUT_FILE" << 'PYTHON_EOF'
+python3 - "${TEMP_FILE}" "${OUTPUT_FILE}" << 'PYTHON_EOF'
 import sys
 import csv
 import re
@@ -210,7 +210,7 @@ echo "PBS CLUSTER CONFIGURATION SUMMARY"
 echo "================================================================"
 
 # Calculate summary statistics
-python3 - "$OUTPUT_FILE" << 'PYTHON_EOF'
+python3 - "${OUTPUT_FILE}" << 'PYTHON_EOF'
 import csv
 import sys
 
@@ -293,15 +293,15 @@ echo "================================================================"
 echo "EXPORT COMPLETE"
 echo "================================================================"
 echo ""
-echo "Configuration file: $OUTPUT_FILE"
+echo "Configuration file: ${OUTPUT_FILE}"
 echo ""
 echo "Next steps:"
 echo ""
 echo "1. Review the configuration:"
-echo "   head -20 $OUTPUT_FILE"
+echo "   head -20 ${OUTPUT_FILE}"
 echo ""
 echo "2. Standardize format (for cross-scheduler comparison):"
-echo "   python3 standardize_cluster_config.py $OUTPUT_FILE"
+echo "   python3 standardize_cluster_config.py ${OUTPUT_FILE}"
 echo ""
 echo "3. Compare with job data to calculate utilization:"
 echo "   # Export job data first:"

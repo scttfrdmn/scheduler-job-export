@@ -55,23 +55,23 @@ extract_python() {
 
     while IFS= read -r line; do
         # Start of Python block
-        if [[ "$line" =~ python3[[:space:]]*\<\<[[:space:]]*[\'\"]*PYTHON_EOF[\'\"]*[[:space:]]*$ ]]; then
+        if [[ "${line}" =~ python3[[:space:]]*\<\<[[:space:]]*[\'\"]*PYTHON_EOF[\'\"]*[[:space:]]*$ ]]; then
             in_python=1
             python_block=""
             continue
         fi
 
         # End of Python block
-        if [[ "$line" =~ ^PYTHON_EOF[[:space:]]*$ ]] && [ $in_python -eq 1 ]; then
+        if [[ "${line}" =~ ^PYTHON_EOF[[:space:]]*$ ]] && [[ "${in_python}" -eq 1 ]]; then
             in_python=0
             block_num=$((block_num + 1))
 
             # Write Python block to file
-            local basename=$(basename "$bash_script" .sh)
-            local output_file="$output_dir/${basename}_block${block_num}.py"
-            echo "$python_block" > "$output_file"
+            local basename=$(basename "${bash_script}" .sh)
+            local output_file="${output_dir}/${basename}_block${block_num}.py"
+            echo "${python_block}" > "${output_file}"
 
-            echo "  ├─ Block $block_num: ${basename}_block${block_num}.py"
+            echo "  ├─ Block ${block_num}: ${basename}_block${block_num}.py"
             PYTHON_BLOCKS=$((PYTHON_BLOCKS + 1))
 
             python_block=""
@@ -79,31 +79,31 @@ extract_python() {
         fi
 
         # Inside Python block - collect lines
-        if [ $in_python -eq 1 ]; then
+        if [[ "${in_python}" -eq 1 ]]; then
             python_block="${python_block}${line}"$'\n'
         fi
-    done < "$bash_script"
+    done < "${bash_script}"
 
-    return $block_num
+    return "${block_num}"
 }
 
 # Process all export scripts
 for script in export_*.sh anonymize_cluster_data.sh; do
-    if [ ! -f "$script" ]; then
+    if [[ ! -f "${script}" ]]; then
         continue
     fi
 
-    echo "Processing: $script"
+    echo "Processing: ${script}"
     SCRIPTS_FOUND=$((SCRIPTS_FOUND + 1))
 
-    extract_python "$script" "$TEMP_DIR"
+    extract_python "${script}" "${TEMP_DIR}"
     echo ""
 done
 
 # Also check standalone Python files
-if [ -f "standardize_cluster_config.py" ]; then
+if [[ -f "standardize_cluster_config.py" ]]; then
     echo "Processing: standardize_cluster_config.py (standalone)"
-    cp standardize_cluster_config.py "$TEMP_DIR/"
+    cp standardize_cluster_config.py "${TEMP_DIR}/"
     PYTHON_BLOCKS=$((PYTHON_BLOCKS + 1))
     echo "  └─ Copied standalone Python file"
     echo ""
@@ -113,11 +113,11 @@ echo "================================================================"
 echo "EXTRACTION COMPLETE"
 echo "================================================================"
 echo ""
-echo "Bash scripts processed: $SCRIPTS_FOUND"
-echo "Python blocks extracted: $PYTHON_BLOCKS"
+echo "Bash scripts processed: ${SCRIPTS_FOUND}"
+echo "Python blocks extracted: ${PYTHON_BLOCKS}"
 echo ""
 
-if [ $PYTHON_BLOCKS -eq 0 ]; then
+if [[ "${PYTHON_BLOCKS}" -eq 0 ]]; then
     echo "WARNING: No Python code found to lint!"
     exit 0
 fi
@@ -128,13 +128,13 @@ echo "================================================================"
 echo ""
 
 # Run ruff on extracted Python files
-if ruff check "$TEMP_DIR" --config pyproject.toml; then
+if ruff check "${TEMP_DIR}" --config pyproject.toml; then
     echo ""
     echo "================================================================"
     echo "✓ ALL CHECKS PASSED"
     echo "================================================================"
     echo ""
-    echo "No linting errors found in $PYTHON_BLOCKS Python code blocks!"
+    echo "No linting errors found in ${PYTHON_BLOCKS} Python code blocks!"
     exit 0
 else
     LINT_ERRORS=$?
@@ -145,11 +145,11 @@ else
     echo ""
     echo "Found issues in extracted Python code."
     echo ""
-    echo "To see detailed output, extracted files are in: $TEMP_DIR"
+    echo "To see detailed output, extracted files are in: ${TEMP_DIR}"
     echo "(They will be deleted when this script exits)"
     echo ""
     echo "To fix issues automatically where possible:"
-    echo "  ruff check $TEMP_DIR --fix"
+    echo "  ruff check ${TEMP_DIR} --fix"
     echo ""
-    exit $LINT_ERRORS
+    exit "${LINT_ERRORS}"
 fi

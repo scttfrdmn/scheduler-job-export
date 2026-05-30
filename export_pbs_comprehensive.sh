@@ -12,8 +12,8 @@ set -euo pipefail
 
 # Load security libraries
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/validation.sh"
-source "$SCRIPT_DIR/security_logging.sh"
+source "${SCRIPT_DIR}/validation.sh"
+source "${SCRIPT_DIR}/security_logging.sh"
 
 # Configuration
 START_DATE="${1:-$(date -d '1 year ago' +%Y%m%d 2>/dev/null || date -v-1y +%Y%m%d)}"
@@ -21,15 +21,15 @@ END_DATE="${2:-$(date +%Y%m%d)}"
 OUTPUT_FILE="pbs_jobs_with_users_$(date +%Y%m%d).csv"
 
 # Validate and sanitize date inputs
-if ! START_DATE=$(validate_and_sanitize_date "$START_DATE" "pbs"); then
-    log_validation_failure "date" "$START_DATE"
+if ! START_DATE=$(validate_and_sanitize_date "${START_DATE}" "pbs"); then
+    log_validation_failure "date" "${START_DATE}"
     echo "ERROR: Invalid start date format" >&2
     echo "Expected: YYYYMMDD (e.g., 20240131)" >&2
     exit 1
 fi
 
-if ! END_DATE=$(validate_and_sanitize_date "$END_DATE" "pbs"); then
-    log_validation_failure "date" "$END_DATE"
+if ! END_DATE=$(validate_and_sanitize_date "${END_DATE}" "pbs"); then
+    log_validation_failure "date" "${END_DATE}"
     echo "ERROR: Invalid end date format" >&2
     echo "Expected: YYYYMMDD (e.g., 20241231)" >&2
     exit 1
@@ -39,23 +39,23 @@ echo "================================================================"
 echo "PBS/Torque Comprehensive Job Data Export"
 echo "================================================================"
 echo ""
-echo "Date range: $START_DATE to $END_DATE"
-echo "Output file: $OUTPUT_FILE"
+echo "Date range: ${START_DATE} to ${END_DATE}"
+echo "Output file: ${OUTPUT_FILE}"
 echo ""
 
 # Log export start
-log_export_start "PBS" "start=$START_DATE end=$END_DATE output=$OUTPUT_FILE"
+log_export_start "PBS" "start=${START_DATE} end=${END_DATE} output=${OUTPUT_FILE}"
 
 # Detect PBS variant
 PBS_VARIANT="unknown"
 if command -v qstat &> /dev/null; then
     # Check version string to determine variant
     VERSION_OUTPUT=$(qstat --version 2>&1 || qstat -B 2>&1 || echo "")
-    if echo "$VERSION_OUTPUT" | grep -qi "pbs pro"; then
+    if echo "${VERSION_OUTPUT}" | grep -qi "pbs pro"; then
         PBS_VARIANT="PBS Pro"
-    elif echo "$VERSION_OUTPUT" | grep -qi "torque"; then
+    elif echo "${VERSION_OUTPUT}" | grep -qi "torque"; then
         PBS_VARIANT="Torque"
-    elif echo "$VERSION_OUTPUT" | grep -qi "openpbs"; then
+    elif echo "${VERSION_OUTPUT}" | grep -qi "openpbs"; then
         PBS_VARIANT="OpenPBS"
     else
         PBS_VARIANT="PBS"
@@ -63,24 +63,24 @@ if command -v qstat &> /dev/null; then
 fi
 
 PBS_VERSION=$(qstat --version 2>&1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+[^ ]*' | head -1 || echo "unknown")
-echo "Detected PBS variant: $PBS_VARIANT ($PBS_VERSION)"
+echo "Detected PBS variant: ${PBS_VARIANT} (${PBS_VERSION})"
 echo ""
 
 # Find accounting directory
 ACCT_DIR=""
 for dir in \
-    "$PBS_HOME/server_priv/accounting" \
+    "${PBS_HOME}/server_priv/accounting" \
     "/var/spool/pbs/server_priv/accounting" \
     "/var/spool/torque/server_priv/accounting" \
     "/opt/pbs/server_priv/accounting" \
     "/usr/spool/pbs/server_priv/accounting"; do
-    if [ -d "$dir" ]; then
-        ACCT_DIR="$dir"
+    if [[ -d "${dir}" ]]; then
+        ACCT_DIR="${dir}"
         break
     fi
 done
 
-if [ -z "$ACCT_DIR" ]; then
+if [[ -z "${ACCT_DIR}" ]]; then
     echo "ERROR: Cannot find PBS accounting directory"
     echo ""
     echo "Tried:"
@@ -95,9 +95,9 @@ if [ -z "$ACCT_DIR" ]; then
     exit 1
 fi
 
-if [ ! -r "$ACCT_DIR" ]; then
-    if [ "${VERBOSE:-0}" -eq 1 ]; then
-        echo "ERROR: Cannot read accounting directory: $ACCT_DIR"
+if [[ ! -r "${ACCT_DIR}" ]]; then
+    if [[ "${VERBOSE:-0}" -eq 1 ]]; then
+        echo "ERROR: Cannot read accounting directory: ${ACCT_DIR}"
     else
         echo "ERROR: Cannot read accounting directory (set VERBOSE=1 for path)"
     fi
@@ -106,38 +106,38 @@ if [ ! -r "$ACCT_DIR" ]; then
     exit 1
 fi
 
-echo "Using accounting directory: $ACCT_DIR"
+echo "Using accounting directory: ${ACCT_DIR}"
 echo ""
 echo "Finding accounting files in date range..."
 
 # PBS accounting files are named YYYYMMDD
 ACCT_FILES=()
-for date_file in $(ls "$ACCT_DIR" | grep -E '^[0-9]{8}$' | sort); do
-    if [ "$date_file" -ge "$START_DATE" ] && [ "$date_file" -le "$END_DATE" ]; then
-        ACCT_FILES+=("$ACCT_DIR/$date_file")
+for date_file in $(ls "${ACCT_DIR}" | grep -E '^[0-9]{8}$' | sort); do
+    if [[ "${date_file}" -ge "${START_DATE}" ]] && [[ "${date_file}" -le "${END_DATE}" ]]; then
+        ACCT_FILES+=("${ACCT_DIR}/${date_file}")
     fi
 done
 
 # Also check for compressed files
-for date_file in $(ls "$ACCT_DIR" | grep -E '^[0-9]{8}\.(gz|bz2)$' | sed 's/\.(gz|bz2)$//' | sort); do
-    if [ "$date_file" -ge "$START_DATE" ] && [ "$date_file" -le "$END_DATE" ]; then
+for date_file in $(ls "${ACCT_DIR}" | grep -E '^[0-9]{8}\.(gz|bz2)$' | sed 's/\.(gz|bz2)$//' | sort); do
+    if [[ "${date_file}" -ge "${START_DATE}" ]] && [[ "${date_file}" -le "${END_DATE}" ]]; then
         # Check both .gz and .bz2
-        if [ -f "$ACCT_DIR/${date_file}.gz" ]; then
-            ACCT_FILES+=("$ACCT_DIR/${date_file}.gz")
-        elif [ -f "$ACCT_DIR/${date_file}.bz2" ]; then
-            ACCT_FILES+=("$ACCT_DIR/${date_file}.bz2")
+        if [[ -f "${ACCT_DIR}/${date_file}.gz" ]]; then
+            ACCT_FILES+=("${ACCT_DIR}/${date_file}.gz")
+        elif [[ -f "${ACCT_DIR}/${date_file}.bz2" ]]; then
+            ACCT_FILES+=("${ACCT_DIR}/${date_file}.bz2")
         fi
     fi
 done
 
-if [ ${#ACCT_FILES[@]} -eq 0 ]; then
-    echo "ERROR: No accounting files found in date range $START_DATE to $END_DATE"
+if [[ ${#ACCT_FILES[@]} -eq 0 ]]; then
+    echo "ERROR: No accounting files found in date range ${START_DATE} to ${END_DATE}"
     echo ""
 
     # Show directory listing only in verbose mode (avoid information disclosure)
-    if [ "${VERBOSE:-0}" -eq 1 ]; then
-        echo "Available files in $ACCT_DIR:"
-        ls -1 "$ACCT_DIR" | head -20
+    if [[ "${VERBOSE:-0}" -eq 1 ]]; then
+        echo "Available files in ${ACCT_DIR}:"
+        ls -1 "${ACCT_DIR}" | head -20
     else
         echo "Set VERBOSE=1 to see available files"
         echo "Example: VERBOSE=1 ./export_pbs_comprehensive.sh"
@@ -149,10 +149,10 @@ fi
 echo "Found ${#ACCT_FILES[@]} accounting files"
 echo ""
 
-if [ "${VERBOSE:-0}" = "1" ]; then
+if [[ "${VERBOSE:-0}" = "1" ]]; then
     echo "================================================================" >&2
     echo "VERBOSE: Accounting files to be parsed:" >&2
-    for f in "${ACCT_FILES[@]}"; do echo "  $f ($(wc -l < "$f") lines)" >&2; done
+    for f in "${ACCT_FILES[@]}"; do echo "  ${f} ($(wc -l < "${f}") lines)" >&2; done
     echo "VERBOSE: First 5 lines of first file:" >&2
     head -5 "${ACCT_FILES[0]}" >&2
     echo "================================================================" >&2
@@ -161,7 +161,7 @@ fi
 echo "Parsing accounting records..."
 
 # Parse PBS accounting logs
-python3 - "pbs" "${PBS_VARIANT}" "${PBS_VERSION}" "${ACCT_FILES[@]}" "$OUTPUT_FILE" << 'PYTHON_EOF'
+python3 - "pbs" "${PBS_VARIANT}" "${PBS_VERSION}" "${ACCT_FILES[@]}" "${OUTPUT_FILE}" << 'PYTHON_EOF'
 import sys
 import csv
 import os
@@ -488,40 +488,40 @@ VALIDATION_FAILED=0
 
 for file in "${ACCT_FILES[@]}"; do
     # Check file exists
-    if [ ! -e "$file" ]; then
-        echo "ERROR: Accounting file does not exist: $file" >&2
-        log_validation_failure "file_exists" "$file"
+    if [[ ! -e "${file}" ]]; then
+        echo "ERROR: Accounting file does not exist: ${file}" >&2
+        log_validation_failure "file_exists" "${file}"
         VALIDATION_FAILED=1
         continue
     fi
 
     # Check it's a regular file (not directory or special file)
-    if [ ! -f "$file" ]; then
-        echo "ERROR: Not a regular file: $file" >&2
-        log_validation_failure "file_type" "$file"
+    if [[ ! -f "${file}" ]]; then
+        echo "ERROR: Not a regular file: ${file}" >&2
+        log_validation_failure "file_type" "${file}"
         VALIDATION_FAILED=1
         continue
     fi
 
     # Check file is readable
-    if [ ! -r "$file" ]; then
-        echo "ERROR: Cannot read accounting file: $file" >&2
-        log_permission_issue "$file" "read"
+    if [[ ! -r "${file}" ]]; then
+        echo "ERROR: Cannot read accounting file: ${file}" >&2
+        log_permission_issue "${file}" "read"
         VALIDATION_FAILED=1
         continue
     fi
 
     # Check file size is reasonable (not empty, not suspiciously large)
-    file_size=$(stat -f%z "$file" 2>/dev/null || stat -c%s "$file" 2>/dev/null || echo "0")
-    if [ "$file_size" -eq 0 ]; then
-        echo "WARNING: Accounting file is empty: $file" >&2
-        log_validation_failure "file_empty" "$file"
-    elif [ "$file_size" -gt 10737418240 ]; then  # > 10GB
-        echo "WARNING: Accounting file is very large (>10GB): $file" >&2
+    file_size=$(stat -f%z "${file}" 2>/dev/null || stat -c%s "${file}" 2>/dev/null || echo "0")
+    if [[ "${file_size}" -eq 0 ]]; then
+        echo "WARNING: Accounting file is empty: ${file}" >&2
+        log_validation_failure "file_empty" "${file}"
+    elif [[ "${file_size}" -gt 10737418240 ]]; then  # > 10GB
+        echo "WARNING: Accounting file is very large (>10GB): ${file}" >&2
     fi
 done
 
-if [ $VALIDATION_FAILED -eq 1 ]; then
+if [[ "${VALIDATION_FAILED}" -eq 1 ]]; then
     echo "ERROR: Accounting file validation failed" >&2
     echo "Cannot proceed with invalid or inaccessible files" >&2
     exit 1
@@ -534,29 +534,29 @@ echo "================================================================"
 echo "EXPORT COMPLETE"
 echo "================================================================"
 echo ""
-echo "Output file: $OUTPUT_FILE"
+echo "Output file: ${OUTPUT_FILE}"
 echo ""
 echo "File details:"
-ls -lh "$OUTPUT_FILE"
+ls -lh "${OUTPUT_FILE}"
 echo ""
 echo "First few records:"
-head -5 "$OUTPUT_FILE"
+head -5 "${OUTPUT_FILE}"
 echo ""
 echo "================================================================"
 echo "NEXT STEPS"
 echo "================================================================"
 echo ""
 echo "1. Verify the export looks correct:"
-echo "   head -20 $OUTPUT_FILE"
-echo "   tail -20 $OUTPUT_FILE"
+echo "   head -20 ${OUTPUT_FILE}"
+echo "   tail -20 ${OUTPUT_FILE}"
 echo ""
 echo "2. Check statistics:"
-echo "   wc -l $OUTPUT_FILE"
-echo "   cut -d, -f1 $OUTPUT_FILE | sort -u | wc -l  # Unique users"
+echo "   wc -l ${OUTPUT_FILE}"
+echo "   cut -d, -f1 ${OUTPUT_FILE} | sort -u | wc -l  # Unique users"
 echo ""
 echo "3. Anonymize the data:"
 echo "   ./anonymize_cluster_data.sh \\"
-echo "     $OUTPUT_FILE \\"
+echo "     ${OUTPUT_FILE} \\"
 echo "     pbs_jobs_anonymized.csv \\"
 echo "     pbs_mapping_secure.txt"
 echo ""
