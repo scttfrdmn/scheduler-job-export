@@ -35,11 +35,11 @@ echo ""
 
 PYTHON_FILES=$(find . -name "*.py" -not -path "./.git/*" -not -path "./venv/*" -not -path "./.venv/*")
 
-if [ -z "$PYTHON_FILES" ]; then
+if [[ -z "${PYTHON_FILES}" ]]; then
     echo "No Python files found to scan"
 else
     echo "Found Python files:"
-    echo "$PYTHON_FILES" | sed 's/^/  /'
+    echo "${PYTHON_FILES}" | sed 's/^/  /'
     echo ""
 
     bandit -c .bandit -r . -f screen

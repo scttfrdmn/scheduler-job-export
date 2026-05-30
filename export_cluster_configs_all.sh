@@ -7,7 +7,7 @@
 set -euo pipefail
 
 OUTPUT_DIR="cluster_configs_$(date +%Y%m%d)"
-mkdir -p "$OUTPUT_DIR"
+mkdir -p "${OUTPUT_DIR}"
 
 echo "================================"
 echo "CLUSTER CONFIGURATION EXPORT"
@@ -25,12 +25,12 @@ if command -v sinfo &> /dev/null; then
     echo "✓ Found SLURM"
     FOUND_SCHEDULER=true
 
-    sinfo -N -o "%N,%c,%m,%G,%P,%T,%C" --noheader > "$OUTPUT_DIR/slurm_nodes.tmp"
-    echo "NodeName,CPUs,Memory,Gres,Partition,State,CPUAllocation" > "$OUTPUT_DIR/slurm_config.csv"
-    cat "$OUTPUT_DIR/slurm_nodes.tmp" >> "$OUTPUT_DIR/slurm_config.csv"
-    rm "$OUTPUT_DIR/slurm_nodes.tmp"
+    sinfo -N -o "%N,%c,%m,%G,%P,%T,%C" --noheader > "${OUTPUT_DIR}/slurm_nodes.tmp"
+    echo "NodeName,CPUs,Memory,Gres,Partition,State,CPUAllocation" > "${OUTPUT_DIR}/slurm_config.csv"
+    cat "${OUTPUT_DIR}/slurm_nodes.tmp" >> "${OUTPUT_DIR}/slurm_config.csv"
+    rm "${OUTPUT_DIR}/slurm_nodes.tmp"
 
-    echo "  Exported: $OUTPUT_DIR/slurm_config.csv"
+    echo "  Exported: ${OUTPUT_DIR}/slurm_config.csv"
 fi
 
 # ==============================================================================
@@ -41,7 +41,7 @@ if command -v qhost &> /dev/null; then
     FOUND_SCHEDULER=true
 
     # qhost shows all execution hosts
-    qhost -F -xml > "$OUTPUT_DIR/uge_hosts.xml"
+    qhost -F -xml > "${OUTPUT_DIR}/uge_hosts.xml"
 
     # Parse XML to CSV
     python3 << 'PYTHON_EOF'
@@ -79,8 +79,8 @@ with open(sys.argv[2], 'w', newline='') as f:
 print(f"Exported {len(hosts)} hosts", file=sys.stderr)
 PYTHON_EOF
 
-    python3 - "$OUTPUT_DIR/uge_hosts.xml" "$OUTPUT_DIR/uge_config.csv"
-    echo "  Exported: $OUTPUT_DIR/uge_config.csv"
+    python3 - "${OUTPUT_DIR}/uge_hosts.xml" "${OUTPUT_DIR}/uge_config.csv"
+    echo "  Exported: ${OUTPUT_DIR}/uge_config.csv"
 fi
 
 # ==============================================================================
@@ -91,7 +91,7 @@ if command -v pbsnodes &> /dev/null; then
     FOUND_SCHEDULER=true
 
     # pbsnodes -a shows all nodes
-    pbsnodes -a > "$OUTPUT_DIR/pbs_nodes.txt"
+    pbsnodes -a > "${OUTPUT_DIR}/pbs_nodes.txt"
 
     # Parse pbsnodes output to CSV
     python3 << 'PYTHON_EOF'
@@ -141,8 +141,8 @@ with open(sys.argv[2], 'w', newline='') as f:
 print(f"Exported {len(nodes)} nodes", file=sys.stderr)
 PYTHON_EOF
 
-    python3 - "$OUTPUT_DIR/pbs_nodes.txt" "$OUTPUT_DIR/pbs_config.csv"
-    echo "  Exported: $OUTPUT_DIR/pbs_config.csv"
+    python3 - "${OUTPUT_DIR}/pbs_nodes.txt" "${OUTPUT_DIR}/pbs_config.csv"
+    echo "  Exported: ${OUTPUT_DIR}/pbs_config.csv"
 fi
 
 # ==============================================================================
@@ -153,11 +153,11 @@ if command -v bhosts &> /dev/null; then
     FOUND_SCHEDULER=true
 
     # bhosts -l gives detailed info
-    bhosts -w > "$OUTPUT_DIR/lsf_hosts.txt"
+    bhosts -w > "${OUTPUT_DIR}/lsf_hosts.txt"
 
     # Also get lshosts for hardware info
     if command -v lshosts &> /dev/null; then
-        lshosts -w > "$OUTPUT_DIR/lsf_lshosts.txt"
+        lshosts -w > "${OUTPUT_DIR}/lsf_lshosts.txt"
     fi
 
     # Parse bhosts output
@@ -192,8 +192,8 @@ with open(sys.argv[2], 'w', newline='') as f:
 print(f"Exported {len(hosts)} hosts", file=sys.stderr)
 PYTHON_EOF
 
-    python3 - "$OUTPUT_DIR/lsf_hosts.txt" "$OUTPUT_DIR/lsf_config.csv"
-    echo "  Exported: $OUTPUT_DIR/lsf_config.csv"
+    python3 - "${OUTPUT_DIR}/lsf_hosts.txt" "${OUTPUT_DIR}/lsf_config.csv"
+    echo "  Exported: ${OUTPUT_DIR}/lsf_config.csv"
 fi
 
 # ==============================================================================
@@ -204,20 +204,20 @@ if command -v condor_status &> /dev/null; then
     FOUND_SCHEDULER=true
 
     # condor_status shows all slots
-    condor_status -af:ht Machine Cpus Memory TotalSlots State Activity > "$OUTPUT_DIR/condor_status.tmp"
+    condor_status -af:ht Machine Cpus Memory TotalSlots State Activity > "${OUTPUT_DIR}/condor_status.tmp"
 
-    echo "Machine,Cpus,Memory,TotalSlots,State,Activity" > "$OUTPUT_DIR/htcondor_config.csv"
-    cat "$OUTPUT_DIR/condor_status.tmp" >> "$OUTPUT_DIR/htcondor_config.csv"
-    rm "$OUTPUT_DIR/condor_status.tmp"
+    echo "Machine,Cpus,Memory,TotalSlots,State,Activity" > "${OUTPUT_DIR}/htcondor_config.csv"
+    cat "${OUTPUT_DIR}/condor_status.tmp" >> "${OUTPUT_DIR}/htcondor_config.csv"
+    rm "${OUTPUT_DIR}/condor_status.tmp"
 
-    echo "  Exported: $OUTPUT_DIR/htcondor_config.csv"
+    echo "  Exported: ${OUTPUT_DIR}/htcondor_config.csv"
 fi
 
 # ==============================================================================
 # SUMMARY
 # ==============================================================================
 echo ""
-if [ "$FOUND_SCHEDULER" = false ]; then
+if [[ "${FOUND_SCHEDULER}" = false ]]; then
     echo "ERROR: No supported scheduler found!"
     echo ""
     echo "Supported schedulers:"
@@ -233,14 +233,14 @@ echo "================================"
 echo "CONFIGURATION EXPORT COMPLETE"
 echo "================================"
 echo ""
-echo "Configuration files saved in: $OUTPUT_DIR/"
+echo "Configuration files saved in: ${OUTPUT_DIR}/"
 echo ""
 echo "Next steps:"
 echo "  1. Review configuration files:"
-echo "     ls -lh $OUTPUT_DIR/"
+echo "     ls -lh ${OUTPUT_DIR}/"
 echo ""
 echo "  2. Calculate cluster statistics:"
-echo "     ./analyze_cluster_config.sh $OUTPUT_DIR/*.csv"
+echo "     ./analyze_cluster_config.sh ${OUTPUT_DIR}/*.csv"
 echo ""
 echo "  3. Compare with job utilization data to determine true utilization"
 echo ""

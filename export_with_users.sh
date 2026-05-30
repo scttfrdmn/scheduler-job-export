@@ -17,23 +17,23 @@ set -euo pipefail
 
 # Load security libraries
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/validation.sh"
-source "$SCRIPT_DIR/security_logging.sh"
+source "${SCRIPT_DIR}/validation.sh"
+source "${SCRIPT_DIR}/security_logging.sh"
 
 # Date range configuration (command-line arguments or defaults)
 START_DATE="${1:-$(date -d '1 year ago' '+%Y-%m-%d' 2>/dev/null || date -v-1y '+%Y-%m-%d')}"
 END_DATE="${2:-$(date '+%Y-%m-%d')}"
 
 # Validate and sanitize date inputs
-if ! START_DATE=$(validate_and_sanitize_date "$START_DATE" "slurm"); then
-    log_validation_failure "date" "$START_DATE"
+if ! START_DATE=$(validate_and_sanitize_date "${START_DATE}" "slurm"); then
+    log_validation_failure "date" "${START_DATE}"
     echo "ERROR: Invalid start date format" >&2
     echo "Expected: YYYY-MM-DD (e.g., 2024-01-31)" >&2
     exit 1
 fi
 
-if ! END_DATE=$(validate_and_sanitize_date "$END_DATE" "slurm"); then
-    log_validation_failure "date" "$END_DATE"
+if ! END_DATE=$(validate_and_sanitize_date "${END_DATE}" "slurm"); then
+    log_validation_failure "date" "${END_DATE}"
     echo "ERROR: Invalid end date format" >&2
     echo "Expected: YYYY-MM-DD (e.g., 2024-12-31)" >&2
     exit 1
@@ -48,38 +48,38 @@ echo "================================================================"
 echo "SLURM Job Data Export with User Information"
 echo "================================================================"
 echo ""
-echo "Date range: $START_DATE to $END_DATE"
-echo "Output file: $OUTPUT_FILE"
+echo "Date range: ${START_DATE} to ${END_DATE}"
+echo "Output file: ${OUTPUT_FILE}"
 echo ""
 
 # Log export start
-log_export_start "SLURM" "start=$START_DATE end=$END_DATE output=$OUTPUT_FILE"
+log_export_start "SLURM" "start=${START_DATE} end=${END_DATE} output=${OUTPUT_FILE}"
 
 # Detect SLURM version for metadata column
 SLURM_VERSION=$(sinfo --version 2>/dev/null | awk '{print $NF}' || echo "unknown")
-echo "Detected SLURM version: $SLURM_VERSION"
+echo "Detected SLURM version: ${SLURM_VERSION}"
 
 # Export with sacct (pipe-separated output)
 echo "Querying SLURM accounting database..."
 sacct -a \
   --format=User,Group,Account,JobID,JobName,ReqCPUS,ReqMem,NNodes,NodeList,Submit,Start,End,ExitCode,State,MaxRSS,TotalCPU,Elapsed,AllocCPUS,Partition,QOS,Priority,Reservation,AllocTRES \
-  --starttime "$START_DATE" \
-  --endtime "$END_DATE" \
+  --starttime "${START_DATE}" \
+  --endtime "${END_DATE}" \
   --parsable2 \
-  > "$TEMP_FILE"
+  > "${TEMP_FILE}"
 
-if [ "${VERBOSE:-0}" = "1" ]; then
+if [[ "${VERBOSE:-0}" = "1" ]]; then
     echo "================================================================" >&2
     echo "VERBOSE: Raw sacct output (first 5 lines):" >&2
-    head -5 "$TEMP_FILE" >&2
-    echo "  ... ($(wc -l < "$TEMP_FILE") total lines)" >&2
+    head -5 "${TEMP_FILE}" >&2
+    echo "  ... ($(wc -l < "${TEMP_FILE}") total lines)" >&2
     echo "================================================================" >&2
 fi
 
 echo "Converting to standardized CSV format..."
 
 # Convert pipe-separated sacct output to standardized comma-separated CSV
-python3 - "$TEMP_FILE" "$OUTPUT_FILE" "slurm" "$SLURM_VERSION" << 'PYTHON_EOF'
+python3 - "${TEMP_FILE}" "${OUTPUT_FILE}" "slurm" "${SLURM_VERSION}" << 'PYTHON_EOF'
 import sys
 import csv
 import re
@@ -377,22 +377,22 @@ echo "================================================================"
 echo ""
 
 # Calculate statistics and log completion
-TOTAL_JOBS=$(tail -n +2 "$OUTPUT_FILE" | wc -l)
-log_export_complete "SLURM" "$TOTAL_JOBS" "$OUTPUT_FILE"
+TOTAL_JOBS=$(tail -n +2 "${OUTPUT_FILE}" | wc -l)
+log_export_complete "SLURM" "${TOTAL_JOBS}" "${OUTPUT_FILE}"
 
 # Generate integrity checksum
-generate_checksum "$OUTPUT_FILE"
+generate_checksum "${OUTPUT_FILE}"
 
 echo "Statistics:"
-echo "  Output file: $OUTPUT_FILE"
-echo "  Total jobs: $TOTAL_JOBS"
+echo "  Output file: ${OUTPUT_FILE}"
+echo "  Total jobs: ${TOTAL_JOBS}"
 echo ""
 echo "Next steps:"
 echo "  1. Verify the export looks correct:"
-echo "     head $OUTPUT_FILE"
+echo "     head ${OUTPUT_FILE}"
 echo ""
 echo "  2. Run anonymization:"
-echo "     ./anonymize_cluster_data.sh $OUTPUT_FILE slurm_anonymized.csv mapping_secure.txt"
+echo "     ./anonymize_cluster_data.sh ${OUTPUT_FILE} slurm_anonymized.csv mapping_secure.txt"
 echo ""
 echo "  3. Secure the mapping file:"
 echo "     chmod 600 mapping_secure.txt"

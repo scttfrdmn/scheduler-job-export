@@ -12,8 +12,8 @@ END_DATE="${2:-$(date '+%Y/%m/%d')}"
 OUTPUT_FILE="lsf_jobs_with_users_$(date +%Y%m%d).csv"
 
 echo "Exporting LSF job data with user/group information..."
-echo "Date range: $START_DATE to $END_DATE"
-echo "Output file: $OUTPUT_FILE"
+echo "Date range: ${START_DATE} to ${END_DATE}"
+echo "Output file: ${OUTPUT_FILE}"
 echo ""
 
 # Check if bhist is available
@@ -33,12 +33,12 @@ trap 'rm -f "$TEMP_FILE"' EXIT
 
 # Export with bhist
 # Note: bhist -l gives detailed output that we'll parse
-bhist -C "$START_DATE,${END_DATE}" -l -a > "$TEMP_FILE"
+bhist -C "${START_DATE},${END_DATE}" -l -a > "${TEMP_FILE}"
 
 echo "Parsing LSF output into CSV format..."
 
 # Parse bhist output into CSV
-python3 - "$TEMP_FILE" "$OUTPUT_FILE" << 'PYTHON_EOF'
+python3 - "${TEMP_FILE}" "${OUTPUT_FILE}" << 'PYTHON_EOF'
 import sys
 import csv
 import re
@@ -171,15 +171,15 @@ echo ""
 echo "Export complete!"
 echo ""
 echo "Statistics:"
-echo "  Total records: $(tail -n +2 "$OUTPUT_FILE" | wc -l)"
-echo "  Output file: $OUTPUT_FILE"
+echo "  Total records: $(tail -n +2 "${OUTPUT_FILE}" | wc -l)"
+echo "  Output file: ${OUTPUT_FILE}"
 echo ""
 echo "Next steps:"
 echo "  1. Verify the export:"
-echo "     head $OUTPUT_FILE"
+echo "     head ${OUTPUT_FILE}"
 echo ""
 echo "  2. Run anonymization:"
-echo "     ./anonymize_cluster_data.sh $OUTPUT_FILE lsf_jobs_anonymized.csv mapping_secure.txt"
+echo "     ./anonymize_cluster_data.sh ${OUTPUT_FILE} lsf_jobs_anonymized.csv mapping_secure.txt"
 echo ""
 echo "  3. Secure the mapping file:"
 echo "     chmod 600 mapping_secure.txt"

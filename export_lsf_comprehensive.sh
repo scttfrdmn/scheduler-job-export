@@ -10,8 +10,8 @@ set -euo pipefail
 
 # Load security libraries
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/validation.sh"
-source "$SCRIPT_DIR/security_logging.sh"
+source "${SCRIPT_DIR}/validation.sh"
+source "${SCRIPT_DIR}/security_logging.sh"
 
 # Configuration
 START_DATE="${1:-$(date -d '1 year ago' '+%Y/%m/%d' 2>/dev/null || date -v-1y '+%Y/%m/%d')}"
@@ -19,15 +19,15 @@ END_DATE="${2:-$(date '+%Y/%m/%d')}"
 OUTPUT_FILE="lsf_jobs_with_users_$(date +%Y%m%d).csv"
 
 # Validate and sanitize date inputs
-if ! START_DATE=$(validate_and_sanitize_date "$START_DATE" "lsf"); then
-    log_validation_failure "date" "$START_DATE"
+if ! START_DATE=$(validate_and_sanitize_date "${START_DATE}" "lsf"); then
+    log_validation_failure "date" "${START_DATE}"
     echo "ERROR: Invalid start date format" >&2
     echo "Expected: YYYY/MM/DD (e.g., 2024/01/31)" >&2
     exit 1
 fi
 
-if ! END_DATE=$(validate_and_sanitize_date "$END_DATE" "lsf"); then
-    log_validation_failure "date" "$END_DATE"
+if ! END_DATE=$(validate_and_sanitize_date "${END_DATE}" "lsf"); then
+    log_validation_failure "date" "${END_DATE}"
     echo "ERROR: Invalid end date format" >&2
     echo "Expected: YYYY/MM/DD (e.g., 2024/12/31)" >&2
     exit 1
@@ -37,12 +37,12 @@ echo "================================================================"
 echo "LSF Comprehensive Job Data Export"
 echo "================================================================"
 echo ""
-echo "Date range: $START_DATE to $END_DATE"
-echo "Output file: $OUTPUT_FILE"
+echo "Date range: ${START_DATE} to ${END_DATE}"
+echo "Output file: ${OUTPUT_FILE}"
 echo ""
 
 # Log export start
-log_export_start "LSF" "start=$START_DATE end=$END_DATE output=$OUTPUT_FILE"
+log_export_start "LSF" "start=${START_DATE} end=${END_DATE} output=${OUTPUT_FILE}"
 
 # Detect LSF version for metadata column
 LSF_VERSION=$(lsid 2>/dev/null | awk '/IBM Spectrum LSF|Platform LSF/{print $NF; exit}' || \
@@ -76,24 +76,24 @@ trap 'rm -f "$TEMP_FILE" "$BACCT_FILE"' EXIT
 # -C specifies time range
 # -a includes all users (requires LSF admin privileges)
 echo "Running bhist query..."
-bhist -C "$START_DATE,${END_DATE}" -l -a > "$TEMP_FILE" 2>&1 || {
+bhist -C "${START_DATE},${END_DATE}" -l -a > "${TEMP_FILE}" 2>&1 || {
     echo "Warning: bhist -a failed (may need admin privileges)"
     echo "Trying without -a (only your jobs)..."
-    bhist -C "$START_DATE,${END_DATE}" -l > "$TEMP_FILE"
+    bhist -C "${START_DATE},${END_DATE}" -l > "${TEMP_FILE}"
 }
 
-if [ "${VERBOSE:-0}" = "1" ]; then
+if [[ "${VERBOSE:-0}" = "1" ]]; then
     echo "================================================================" >&2
     echo "VERBOSE: Raw bhist output (first 20 lines):" >&2
-    head -20 "$TEMP_FILE" >&2
-    echo "  ... ($(wc -l < "$TEMP_FILE") total lines)" >&2
+    head -20 "${TEMP_FILE}" >&2
+    echo "  ... ($(wc -l < "${TEMP_FILE}") total lines)" >&2
     echo "================================================================" >&2
 fi
 
 # If bacct is available, also query it for more detailed resource usage
-if [ "$HAVE_BACCT" = true ]; then
+if [[ "${HAVE_BACCT}" = true ]]; then
     echo "Running bacct query for resource usage..."
-    bacct -C "$START_DATE,${END_DATE}" -l > "$BACCT_FILE" 2>&1 || {
+    bacct -C "${START_DATE},${END_DATE}" -l > "${BACCT_FILE}" 2>&1 || {
         echo "Warning: bacct query failed, will use bhist data only"
         HAVE_BACCT=false
     }
@@ -103,7 +103,7 @@ echo ""
 echo "Parsing LSF output into standardized CSV format..."
 
 # Parse bhist output into CSV
-python3 - "$TEMP_FILE" "$BACCT_FILE" "$OUTPUT_FILE" "$HAVE_BACCT" "lsf" "$LSF_VERSION" << 'PYTHON_EOF'
+python3 - "${TEMP_FILE}" "${BACCT_FILE}" "${OUTPUT_FILE}" "${HAVE_BACCT}" "lsf" "${LSF_VERSION}" << 'PYTHON_EOF'
 import sys
 import csv
 import re
@@ -447,29 +447,29 @@ echo "================================================================"
 echo "EXPORT COMPLETE"
 echo "================================================================"
 echo ""
-echo "Output file: $OUTPUT_FILE"
+echo "Output file: ${OUTPUT_FILE}"
 echo ""
 echo "File details:"
-ls -lh "$OUTPUT_FILE"
+ls -lh "${OUTPUT_FILE}"
 echo ""
 echo "First few records:"
-head -5 "$OUTPUT_FILE"
+head -5 "${OUTPUT_FILE}"
 echo ""
 echo "================================================================"
 echo "NEXT STEPS"
 echo "================================================================"
 echo ""
 echo "1. Verify the export looks correct:"
-echo "   head -20 $OUTPUT_FILE"
-echo "   tail -20 $OUTPUT_FILE"
+echo "   head -20 ${OUTPUT_FILE}"
+echo "   tail -20 ${OUTPUT_FILE}"
 echo ""
 echo "2. Check statistics:"
-echo "   wc -l $OUTPUT_FILE"
-echo "   cut -d, -f1 $OUTPUT_FILE | sort -u | wc -l  # Unique users"
+echo "   wc -l ${OUTPUT_FILE}"
+echo "   cut -d, -f1 ${OUTPUT_FILE} | sort -u | wc -l  # Unique users"
 echo ""
 echo "3. Anonymize the data:"
 echo "   ./anonymize_cluster_data.sh \\"
-echo "     $OUTPUT_FILE \\"
+echo "     ${OUTPUT_FILE} \\"
 echo "     lsf_jobs_anonymized.csv \\"
 echo "     lsf_mapping_secure.txt"
 echo ""

@@ -9,7 +9,7 @@ set -euo pipefail
 OUTPUT_FILE="slurm_cluster_config_$(date +%Y%m%d).csv"
 
 echo "Exporting SLURM cluster configuration..."
-echo "Output file: $OUTPUT_FILE"
+echo "Output file: ${OUTPUT_FILE}"
 echo ""
 
 # Check if sinfo is available
@@ -21,19 +21,19 @@ fi
 echo "Querying cluster configuration..."
 
 # Export with sinfo - shows ALL nodes regardless of whether they ran jobs
-sinfo -N -o "%N,%c,%m,%G,%P,%T,%C" --noheader > "$OUTPUT_FILE.tmp"
+sinfo -N -o "%N,%c,%m,%G,%P,%T,%C" --noheader > "${OUTPUT_FILE}.tmp"
 
 # Add header
-echo "NodeName,CPUs,Memory,Gres,Partition,State,CPUAllocation" > "$OUTPUT_FILE"
-cat "$OUTPUT_FILE.tmp" >> "$OUTPUT_FILE"
-rm "$OUTPUT_FILE.tmp"
+echo "NodeName,CPUs,Memory,Gres,Partition,State,CPUAllocation" > "${OUTPUT_FILE}"
+cat "${OUTPUT_FILE}.tmp" >> "${OUTPUT_FILE}"
+rm "${OUTPUT_FILE}.tmp"
 
 echo ""
 echo "Cluster configuration exported!"
 echo ""
 
 # Calculate summary statistics
-python3 - "$OUTPUT_FILE" << 'PYTHON_EOF'
+python3 - "${OUTPUT_FILE}" << 'PYTHON_EOF'
 import csv
 import sys
 
@@ -113,7 +113,7 @@ print("="*80)
 PYTHON_EOF
 
 echo ""
-echo "Configuration details saved to: $OUTPUT_FILE"
+echo "Configuration details saved to: ${OUTPUT_FILE}"
 echo ""
 echo "Next steps:"
 echo "  1. Compare with job data to calculate true utilization"

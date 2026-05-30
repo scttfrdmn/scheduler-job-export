@@ -13,7 +13,7 @@ echo "================================================================"
 echo "LSF Cluster Configuration Export"
 echo "================================================================"
 echo ""
-echo "Output file: $OUTPUT_FILE"
+echo "Output file: ${OUTPUT_FILE}"
 echo ""
 
 # Check if LSF commands are available
@@ -39,12 +39,12 @@ echo ""
 
 # Get bhosts output (host status and load)
 echo "Running: bhosts -w"
-bhosts -w > "$TEMP_BHOSTS"
+bhosts -w > "${TEMP_BHOSTS}"
 
 # Get lshosts output (hardware details) if available
 if command -v lshosts &> /dev/null; then
     echo "Running: lshosts -w"
-    lshosts -w > "$TEMP_LSHOSTS"
+    lshosts -w > "${TEMP_LSHOSTS}"
 fi
 
 # Get detailed host info with bhosts -l for resource info
@@ -52,13 +52,13 @@ TEMP_BHOSTS_DETAIL=$(mktemp)
 trap 'rm -f "$TEMP_BHOSTS" "$TEMP_LSHOSTS" "$TEMP_BHOSTS_DETAIL"' EXIT
 
 echo "Running: bhosts -l (detailed host info)"
-bhosts -l > "$TEMP_BHOSTS_DETAIL"
+bhosts -l > "${TEMP_BHOSTS_DETAIL}"
 
 echo ""
 echo "Parsing LSF host data into CSV format..."
 
 # Parse LSF output into CSV
-python3 - "$TEMP_BHOSTS" "$TEMP_LSHOSTS" "$TEMP_BHOSTS_DETAIL" "$OUTPUT_FILE" << 'PYTHON_EOF'
+python3 - "${TEMP_BHOSTS}" "${TEMP_LSHOSTS}" "${TEMP_BHOSTS_DETAIL}" "${OUTPUT_FILE}" << 'PYTHON_EOF'
 import sys
 import csv
 import re
@@ -224,7 +224,7 @@ echo "LSF CLUSTER CONFIGURATION SUMMARY"
 echo "================================================================"
 
 # Calculate summary statistics
-python3 - "$OUTPUT_FILE" << 'PYTHON_EOF'
+python3 - "${OUTPUT_FILE}" << 'PYTHON_EOF'
 import csv
 import sys
 
@@ -295,15 +295,15 @@ echo "================================================================"
 echo "EXPORT COMPLETE"
 echo "================================================================"
 echo ""
-echo "Configuration file: $OUTPUT_FILE"
+echo "Configuration file: ${OUTPUT_FILE}"
 echo ""
 echo "Next steps:"
 echo ""
 echo "1. Review the configuration:"
-echo "   head -20 $OUTPUT_FILE"
+echo "   head -20 ${OUTPUT_FILE}"
 echo ""
 echo "2. Standardize format (for cross-scheduler comparison):"
-echo "   python3 standardize_cluster_config.py $OUTPUT_FILE"
+echo "   python3 standardize_cluster_config.py ${OUTPUT_FILE}"
 echo ""
 echo "3. Compare with job data to calculate utilization:"
 echo "   # Export job data first:"

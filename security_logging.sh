@@ -11,9 +11,9 @@ SECURITY_LOG="${SECURITY_LOG:-${HOME}/.cluster-export-security.log}"
 
 # Initialize log file with secure permissions
 init_security_log() {
-    if [ ! -f "$SECURITY_LOG" ]; then
-        touch "$SECURITY_LOG"
-        chmod 600 "$SECURITY_LOG"
+    if [[ ! -f "${SECURITY_LOG}" ]]; then
+        touch "${SECURITY_LOG}"
+        chmod 600 "${SECURITY_LOG}"
     fi
 }
 
@@ -31,7 +31,7 @@ log_security_event() {
     local pid=$$
 
     # Format: [timestamp] [user] [script:pid] [LEVEL] message
-    echo "[$timestamp] [$user] [$script:$pid] [$level] $message" >> "$SECURITY_LOG"
+    echo "[${timestamp}] [${user}] [${script}:${pid}] [${level}] ${message}" >> "${SECURITY_LOG}"
 }
 
 # Convenience wrappers
@@ -44,7 +44,7 @@ log_export_start() {
     shift
     local args="$*"
 
-    log_security_event "INFO" "Export started: scheduler=$scheduler args='$args'"
+    log_security_event "INFO" "Export started: scheduler=${scheduler} args='${args}'"
 }
 
 # Log export completion
@@ -53,7 +53,7 @@ log_export_complete() {
     local records="$2"
     local output_file="$3"
 
-    log_security_event "INFO" "Export completed: scheduler=$scheduler records=$records output='$output_file'"
+    log_security_event "INFO" "Export completed: scheduler=${scheduler} records=${records} output='${output_file}'"
 }
 
 # Log validation failure
@@ -62,9 +62,9 @@ log_validation_failure() {
     local input="$2"
 
     # Sanitize input before logging to prevent log injection
-    input=$(echo "$input" | tr -d '\n\r' | cut -c1-100)
+    input=$(echo "${input}" | tr -d '\n\r' | cut -c1-100)
 
-    log_security_event "WARN" "Validation failed: type=$validation_type input='$input'"
+    log_security_event "WARN" "Validation failed: type=${validation_type} input='${input}'"
 }
 
 # Log suspicious input detection
@@ -73,9 +73,9 @@ log_suspicious_input() {
     local reason="$2"
 
     # Sanitize input before logging
-    input=$(echo "$input" | tr -d '\n\r' | cut -c1-100)
+    input=$(echo "${input}" | tr -d '\n\r' | cut -c1-100)
 
-    log_security_event "ALERT" "Suspicious input detected: reason='$reason' input='$input'"
+    log_security_event "ALERT" "Suspicious input detected: reason='${reason}' input='${input}'"
 }
 
 # Log anonymization operation
@@ -84,7 +84,7 @@ log_anonymization() {
     local output_file="$2"
     local records="$3"
 
-    log_security_event "INFO" "Anonymization: input='$(basename "$input_file")' output='$(basename "$output_file")' records=$records"
+    log_security_event "INFO" "Anonymization: input='$(basename "${input_file}")' output='$(basename "${output_file}")' records=${records}"
 }
 
 # Log file access attempt
@@ -93,7 +93,7 @@ log_file_access() {
     local file="$2"
     local result="$3"
 
-    log_security_event "INFO" "File access: operation=$operation file='$(basename "$file")' result=$result"
+    log_security_event "INFO" "File access: operation=${operation} file='$(basename "${file}")' result=${result}"
 }
 
 # Log permission issue
@@ -101,7 +101,7 @@ log_permission_issue() {
     local resource="$1"
     local required_permission="$2"
 
-    log_security_event "ERROR" "Permission denied: resource='$resource' required='$required_permission'"
+    log_security_event "ERROR" "Permission denied: resource='${resource}' required='${required_permission}'"
 }
 
 # Log security check result
@@ -110,19 +110,19 @@ log_security_check() {
     local result="$2"
     local details="$3"
 
-    log_security_event "INFO" "Security check: name='$check_name' result=$result details='$details'"
+    log_security_event "INFO" "Security check: name='${check_name}' result=${result} details='${details}'"
 }
 
 # View recent security log entries
 show_security_log() {
     local lines="${1:-20}"
 
-    if [ -f "$SECURITY_LOG" ]; then
-        echo "Recent security events (last $lines):"
+    if [[ -f "${SECURITY_LOG}" ]]; then
+        echo "Recent security events (last ${lines}):"
         echo "========================================"
-        tail -n "$lines" "$SECURITY_LOG"
+        tail -n "${lines}" "${SECURITY_LOG}"
     else
-        echo "No security log found at: $SECURITY_LOG"
+        echo "No security log found at: ${SECURITY_LOG}"
     fi
 }
 
@@ -130,32 +130,32 @@ show_security_log() {
 search_security_log() {
     local pattern="$1"
 
-    if [ -f "$SECURITY_LOG" ]; then
-        echo "Security events matching: $pattern"
+    if [[ -f "${SECURITY_LOG}" ]]; then
+        echo "Security events matching: ${pattern}"
         echo "========================================"
-        grep -i "$pattern" "$SECURITY_LOG"
+        grep -i "${pattern}" "${SECURITY_LOG}"
     else
-        echo "No security log found at: $SECURITY_LOG"
+        echo "No security log found at: ${SECURITY_LOG}"
     fi
 }
 
 # Get security statistics
 security_stats() {
-    if [ ! -f "$SECURITY_LOG" ]; then
+    if [[ ! -f "${SECURITY_LOG}" ]]; then
         echo "No security log found"
         return
     fi
 
     echo "Security Log Statistics"
     echo "========================================"
-    echo "Log file: $SECURITY_LOG"
-    echo "Total events: $(wc -l < "$SECURITY_LOG")"
+    echo "Log file: ${SECURITY_LOG}"
+    echo "Total events: $(wc -l < "${SECURITY_LOG}")"
     echo ""
     echo "Events by level:"
-    grep -oE '\[(INFO|WARN|ERROR|ALERT)\]' "$SECURITY_LOG" | sort | uniq -c | sort -rn
+    grep -oE '\[(INFO|WARN|ERROR|ALERT)\]' "${SECURITY_LOG}" | sort | uniq -c | sort -rn
     echo ""
     echo "Recent alerts (last 10):"
-    grep '\[ALERT\]' "$SECURITY_LOG" | tail -10
+    grep '\[ALERT\]' "${SECURITY_LOG}" | tail -10
 }
 
 # Generate SHA256 checksum for file integrity verification
@@ -163,36 +163,36 @@ generate_checksum() {
     local file="$1"
     local checksum_file="${file}.sha256"
 
-    if [ ! -f "$file" ]; then
-        log_error "Cannot generate checksum: file not found: $file"
+    if [[ ! -f "${file}" ]]; then
+        log_error "Cannot generate checksum: file not found: ${file}"
         return 1
     fi
 
     # Generate checksum
     if command -v sha256sum &> /dev/null; then
-        sha256sum "$file" > "$checksum_file"
+        sha256sum "${file}" > "${checksum_file}"
     elif command -v shasum &> /dev/null; then
-        shasum -a 256 "$file" > "$checksum_file"
+        shasum -a 256 "${file}" > "${checksum_file}"
     else
         log_error "No SHA256 tool available (tried sha256sum, shasum)"
         return 1
     fi
 
     # Secure the checksum file
-    chmod 600 "$checksum_file"
+    chmod 600 "${checksum_file}"
 
-    log_info "Checksum generated: $checksum_file"
+    log_info "Checksum generated: ${checksum_file}"
     echo ""
     echo "File Integrity Checksum:"
-    echo "  File: $(basename "$file")"
-    echo "  SHA256: $(cat "$checksum_file")"
-    echo "  Checksum file: $checksum_file"
+    echo "  File: $(basename "${file}")"
+    echo "  SHA256: $(cat "${checksum_file}")"
+    echo "  Checksum file: ${checksum_file}"
     echo ""
     echo "Verify integrity with:"
     if command -v sha256sum &> /dev/null; then
-        echo "  sha256sum -c $checksum_file"
+        echo "  sha256sum -c ${checksum_file}"
     else
-        echo "  shasum -a 256 -c $checksum_file"
+        echo "  shasum -a 256 -c ${checksum_file}"
     fi
 
     return 0
@@ -203,30 +203,30 @@ verify_checksum() {
     local file="$1"
     local checksum_file="${file}.sha256"
 
-    if [ ! -f "$checksum_file" ]; then
-        log_error "Checksum file not found: $checksum_file"
+    if [[ ! -f "${checksum_file}" ]]; then
+        log_error "Checksum file not found: ${checksum_file}"
         return 1
     fi
 
-    echo "Verifying checksum for: $(basename "$file")"
+    echo "Verifying checksum for: $(basename "${file}")"
 
     if command -v sha256sum &> /dev/null; then
-        if sha256sum -c "$checksum_file" 2>&1 | grep -q "OK"; then
-            log_info "Checksum verification: PASS for $file"
+        if sha256sum -c "${checksum_file}" 2>&1 | grep -q "OK"; then
+            log_info "Checksum verification: PASS for ${file}"
             echo "✓ Checksum verification: PASS"
             return 0
         else
-            log_security_event "ALERT" "Checksum verification FAILED for $file"
+            log_security_event "ALERT" "Checksum verification FAILED for ${file}"
             echo "✗ Checksum verification: FAILED"
             return 1
         fi
     elif command -v shasum &> /dev/null; then
-        if shasum -a 256 -c "$checksum_file" 2>&1 | grep -q "OK"; then
-            log_info "Checksum verification: PASS for $file"
+        if shasum -a 256 -c "${checksum_file}" 2>&1 | grep -q "OK"; then
+            log_info "Checksum verification: PASS for ${file}"
             echo "✓ Checksum verification: PASS"
             return 0
         else
-            log_security_event "ALERT" "Checksum verification FAILED for $file"
+            log_security_event "ALERT" "Checksum verification FAILED for ${file}"
             echo "✗ Checksum verification: FAILED"
             return 1
         fi
