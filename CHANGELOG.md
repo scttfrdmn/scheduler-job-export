@@ -9,6 +9,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 
+## [1.2.6] - 2026-05-29
+
+### Fixed
+- **PBS**: `export_pbs_data.sh` now honors the `PBS_ACCT_DIR` environment
+  variable as documented in its own error message. Previously the accounting
+  directory was hardcoded to `/var/spool/pbs/...` and the advertised override
+  had no effect.
+
+### Added
+- **PBS**: end-to-end integration test in `tests/test_integration.bats`,
+  completing integration coverage for all five supported schedulers
+  (SLURM, LSF, UGE, HTCondor, PBS). Closes #2.
+
+### Changed
+- **CI**: the full bats test suite (`tests/`) now runs in GitHub Actions
+  alongside the existing test harness, so the project's most comprehensive
+  tests guard every push and pull request.
+- **Style**: applied ShellCheck autofixes (SC2250 brace-wrapped variables,
+  SC2292 `[[ ]]` test syntax) across all 22 scripts, reducing ShellCheck
+  findings from 950 to 86. No behavioral changes. Remaining nuanced findings
+  tracked in #7.
+
 ## [1.2.5] - 2026-05-19
 
 ### Added
