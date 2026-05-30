@@ -36,7 +36,8 @@ echo "Reading accounting logs..."
 # PBS/Torque accounting logs are typically in /var/spool/pbs/server_priv/accounting/
 # PBS Pro logs are in /var/spool/pbs/server_logs/
 
-ACCT_DIR="/var/spool/pbs/server_priv/accounting"
+# PBS_ACCT_DIR (if set) overrides the default locations.
+ACCT_DIR="${PBS_ACCT_DIR:-/var/spool/pbs/server_priv/accounting}"
 if [ ! -d "$ACCT_DIR" ]; then
     ACCT_DIR="/var/spool/pbs/server_logs"
 fi
